@@ -2,3 +2,5 @@
 *.parquet
 *.csv
 *.json
+*.pkl
+__pycache__
