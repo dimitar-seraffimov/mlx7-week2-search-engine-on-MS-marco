@@ -7,10 +7,33 @@ We will build an appropriate architecture and train it on data from Microsoft Ma
 
 What do we need to do tomorrow?
 
-1. add MS Marco vocabulary to the Wiki one - DONE
-  -- upload to hugging face - DONE
-- 00_train_tkn.py = python script that builds a clean vocabulary from Wikipedia (text8) and MS MARCO search data ("query" + "passage_text"), then tokenises (queries and positive/negative passages) - DONE
+1. Load Pretrained GloVe
+   Builds:
+   - vocab_to_int → {word: id}
+   - int_to_vocab → {id: word}
+   - embedding_matrix → torch.FloatTensor(n_vocab x 300)
 
-2. train the word2vec on the new vocabulary 
- -- this is too slow and not optimised, I know how to do it -> use a pretrained one
+Save: - vocab_to_int.pkl, int_to_vocab.pkl - glove.6B.300d.npy (the matrix)
 
+2. Preprocess & Tokenise MS MARCO v1.1 (the large dataset) using GloVe vocab
+
+- Save as triplets_glove_tokenised.pkl
+
+3. Create Triplets (Query, Positive, Negatives) on the MS Marco v2.2
+
+- Start with: Random negative sampling
+  For every query:
+
+  - 1 positive passage (from MS MARCO labels)
+  - 1 random document as negative (not in its label set)
+
+- Upgrade to: BM25-ranked negatives (Hard negatives) - do this directly?
+  This step gives much stronger negatives and helps model generalise better.
+
+4. Generate Embeddings (for Pos/Neg only)
+
+5. Store in ChromaDB
+
+6. Build Two-Tower Model - have 1-5 done on wednesday, implement this step on Thursday
+
+- having the BM25-ranked negatives (Hard negatives) will help the model massively (or at least I hope so)

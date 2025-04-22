@@ -10,19 +10,10 @@ from pathlib import Path
 # CONFIGURATION
 #
 
-DATA_DIR = Path(".")
-MS_MARCO_DIR = Path("dataprep/ms_marco_combined")
-SPLITS_DIR = MS_MARCO_DIR / "marco_data_splits"
-
-# Create necessary directories
-DATA_DIR.mkdir(exist_ok=True)
-MS_MARCO_DIR.mkdir(parents=True, exist_ok=True)
-SPLITS_DIR.mkdir(parents=True, exist_ok=True)
-
-# Create checkpoints directory for model saves
-Path("checkpoints").mkdir(exist_ok=True)
-
-TEXT8_URL = "https://huggingface.co/datasets/ardMLX/text8/resolve/main/text8"
+COMBINED_PARQUET = Path("../combined.parquet")
+TRAIN_PARQUET = Path("../train.parquet")
+VALID_PARQUET = Path("../validation.parquet")
+TEST_PARQUET = Path("../test.parquet")
 
 #
 # TEXT PREPROCESSING
@@ -87,24 +78,7 @@ def display_triplets(df: pd.DataFrame, int_to_vocab: dict[int, str], n: int = 5)
         shown += 1
         if shown == n:
             break
-
-# 
-# STEP 1: 
-# Create combined vocab from text8 + MS MARCO ("query" + "passage_text")
-#
-
-def download_text8() -> list[str]:
-    print("Downloading and preprocessing text8...")
-
-    r = requests.get(TEXT8_URL)
-
-    raw_path = DATA_DIR / "text8"
-
-    with open(raw_path, "wb") as f:
-        f.write(r.content)
-    with open(raw_path) as f:
-        return preprocess(f.read())
-
+  
 #
 #
 #
@@ -114,7 +88,7 @@ def download_text8() -> list[str]:
 def process_ms_marco() -> tuple[list[str], list[str]]:
     print("Preprocessing MS MARCO queries and passages...")
 
-    df = pd.read_parquet(MS_MARCO_DIR / "combined.parquet")
+    df = pd.read_parquet(COMBINED_PARQUET)
     query_tokens = []
     passage_tokens = []
     
@@ -125,8 +99,9 @@ def process_ms_marco() -> tuple[list[str], list[str]]:
     return query_tokens, passage_tokens
 
 #
-# STEP 2: 
+# 
 # Build and save vocabulary
+#
 #
 
 def build_and_save_vocab(corpus: list[str]):
@@ -150,25 +125,26 @@ def build_and_save_vocab(corpus: list[str]):
     int_to_vocab[unk_id] = "<UNK>"
 
     # Save to root directory
-    pickle.dump(vocab_to_int, open(DATA_DIR / "tkn_vocab_to_int.pkl", "wb"))
-    pickle.dump(int_to_vocab, open(DATA_DIR / "tkn_int_to_vocab.pkl", "wb"))
+    pickle.dump(vocab_to_int, open("../tkn_vocab_to_int.pkl", "wb"))
+    pickle.dump(int_to_vocab, open("../tkn_int_to_vocab.pkl", "wb"))
 
     print(f"Vocabulary saved with {len(vocab_to_int):,} tokens (including <PAD>, <UNK>)")
     print(f"Vocab size (excluding <PAD>, <UNK>): {len(vocab_to_int) - 2:,}")
     return vocab_to_int, int_to_vocab
 
 #
-# STEP 3: 
+#
 # Tokenise (queries and positive/negative passages) and save splits (train, validation, test)
+#
 #
 
 def tokenise_and_save_splits(vocab_to_int: dict, int_to_vocab: dict):
     print("Tokenising data splits...")
 
     splits = {
-        "train": pd.read_parquet(SPLITS_DIR / "train.parquet"),
-        "validation": pd.read_parquet(SPLITS_DIR / "validation.parquet"),
-        "test": pd.read_parquet(SPLITS_DIR / "test.parquet")
+        "train": pd.read_parquet(TRAIN_PARQUET),
+        "validation": pd.read_parquet(VALID_PARQUET),
+        "test": pd.read_parquet(TEST_PARQUET)
     }
 
     for name, df in splits.items():
@@ -182,7 +158,7 @@ def tokenise_and_save_splits(vocab_to_int: dict, int_to_vocab: dict):
 
         print(f"{name}: avg q {df['q_len'].mean():.1f}, p {df['p_len'].mean():.1f}, n {df['n_len'].mean():.1f}")
         # Save to root directory
-        df.to_pickle(DATA_DIR / f"{name}_tokenised.pkl")
+        df.to_pickle(f"{name}_tokenised.pkl")
 
         print(f"\nTokenised samples from {name.upper()}:")
         display_triplets(df, int_to_vocab, n=3)
@@ -194,15 +170,14 @@ def tokenise_and_save_splits(vocab_to_int: dict, int_to_vocab: dict):
 #
 
 if __name__ == "__main__":
-    text8_tokens = download_text8()
     query_tokens, passage_tokens = process_ms_marco()
 
     # Save to root directory
-    pickle.dump(query_tokens, open(DATA_DIR / "ms_marco_queries.pkl", "wb"))
-    pickle.dump(passage_tokens, open(DATA_DIR / "ms_marco_passages.pkl", "wb"))
+    pickle.dump(query_tokens, open("../ms_marco_queries.pkl", "wb"))
+    pickle.dump(passage_tokens, open("../ms_marco_passages.pkl", "wb"))
 
-    combined_corpus = text8_tokens + query_tokens + passage_tokens
-    pickle.dump(combined_corpus, open(DATA_DIR / "combined_corpus.pkl", "wb"))
+    combined_corpus = query_tokens + passage_tokens
+    pickle.dump(combined_corpus, open("../combined_corpus.pkl", "wb"))
     print(f"Combined corpus has {len(combined_corpus):,} tokens")
 
     vocab_to_int, int_to_vocab = build_and_save_vocab(combined_corpus)
