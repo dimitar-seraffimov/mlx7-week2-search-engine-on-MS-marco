@@ -5,6 +5,7 @@ import datetime
 import model
 import dataset
 import evaluate
+from pathlib import Path
 
 
 #
@@ -13,6 +14,10 @@ import evaluate
 torch.manual_seed(42)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 timestamp = datetime.datetime.now().strftime('%Y_%m_%d__%H_%M_%S')
+
+# Create checkpoints directory
+CHECKPOINT_DIR = Path("./checkpoints")
+CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
 
 
 #
@@ -46,7 +51,7 @@ model_cbow.to(device)
 #
 # TRAIN MODEL
 #
-for epoch in range(5):
+for epoch in range(15):
     progress_bar = tqdm.tqdm(dl, desc=f"Epoch {epoch + 1}", leave=False)
     for i, (context, target) in enumerate(progress_bar):
         context, target = context.to(device), target.to(device)
@@ -63,11 +68,11 @@ for epoch in range(5):
             evaluate.topk(model_cbow)
 
     # Save checkpoint
-    ckpt_path = f"./checkpoints/{timestamp}.{epoch + 1}.cbow.pth"
+    ckpt_path = CHECKPOINT_DIR / f"{timestamp}.{epoch + 1}.cbow.pth"
     torch.save(model_cbow.state_dict(), ckpt_path)
 
     artifact = wandb.Artifact("model-weights", type="model")
-    artifact.add_file(ckpt_path)
+    artifact.add_file(str(ckpt_path))  # Convert to string for wandb
     wandb.log_artifact(artifact)
 
 #
