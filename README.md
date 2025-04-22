@@ -7,7 +7,8 @@ We will build an appropriate architecture and train it on data from Microsoft Ma
 
 What do we need to do tomorrow?
 
-- add MS Marco vocabulary to the Wiki one
-  -- upload to hugging face
+- add MS Marco vocabulary to the Wiki one - DONE
+  -- upload to hugging face - DONE
+- 00_train_tkn.py = python script that builds a clean vocabulary from Wikipedia (text8) and MS MARCO search data ("query" + "passage_text"), then tokenises (queries and positive/negative passages) - DONE
 - train the word2vec on the new vocabulary - consider the impact of negative_passage when using the CBOW
   -- upload to weights and biases
