@@ -7,7 +7,33 @@ We will build an appropriate architecture and train it on data from Microsoft Ma
 
 What do we need to do tomorrow?
 
-- add MS Marco vocabulary to the Wiki one
-  -- upload to hugging face
-- train the word2vec on the new vocabulary - consider the impact of negative_passage when using the CBOW
-  -- upload to weights and biases
+1. Load Pretrained GloVe
+   Builds:
+   - vocab_to_int → {word: id}
+   - int_to_vocab → {id: word}
+   - embedding_matrix → torch.FloatTensor(n_vocab x 300)
+
+Save: - vocab_to_int.pkl, int_to_vocab.pkl - glove.6B.300d.npy (the matrix)
+
+2. Preprocess & Tokenise MS MARCO v1.1 (the large dataset) using GloVe vocab
+
+- Save as triplets_glove_tokenised.pkl
+
+3. Create Triplets (Query, Positive, Negatives) on the MS Marco v2.2
+
+- Start with: Random negative sampling
+  For every query:
+
+  - 1 positive passage (from MS MARCO labels)
+  - 1 random document as negative (not in its label set)
+
+- Upgrade to: BM25-ranked negatives (Hard negatives) - do this directly?
+  This step gives much stronger negatives and helps model generalise better.
+
+4. Generate Embeddings (for Pos/Neg only)
+
+5. Store in ChromaDB
+
+6. Build Two-Tower Model - have 1-5 done on wednesday, implement this step on Thursday
+
+- having the BM25-ranked negatives (Hard negatives) will help the model massively (or at least I hope so)
