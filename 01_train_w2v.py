@@ -1,69 +1,77 @@
-#
-#
-#
 import tqdm
+import wandb
 import torch
-import dataset
-import evaluate
 import datetime
 import model
+import dataset
+import evaluate
 
 
 #
-#
+# SETUP
 #
 torch.manual_seed(42)
-dev = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-ts = datetime.datetime.now().strftime('%Y_%m_%d__%H_%M_%S')
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+timestamp = datetime.datetime.now().strftime('%Y_%m_%d__%H_%M_%S')
 
 
 #
+# LOAD DATA
 #
-#
-ds = dataset.Wiki()
-dl = torch.utils.data.DataLoader(dataset=ds, batch_size=256)
+ds = dataset.Vocabulary()
+dl = torch.utils.data.DataLoader(dataset=ds, batch_size=256, shuffle=True)
 
+#
+# INIT MODEL
+#
 
-#
-#
-#
-args = (len(ds.int_to_vocab), 128)
-mFoo = model.CBOW(*args)
-print('mFoo:params', sum(p.numel() for p in mFoo.parameters()))
-opFoo = torch.optim.Adam(mFoo.parameters(), lr=0.003)
+vocab_size = len(ds.int_to_vocab)
+embedding_dim = 128
+
+model_cbow = model.CBOW(vocab_size, embedding_dim)
+print('Model parameters:', sum(p.numel() for p in model_cbow.parameters()))
+
+optimizer = torch.optim.Adam(model_cbow.parameters(), lr=0.003)
 criterion = torch.nn.CrossEntropyLoss()
 
+#
+# Initialize wandb
+#
+wandb.init(
+    project='mlx7-week2-search-engine',  # Your project name
+    name=f'cbow_{timestamp}'
+)
+model_cbow.to(device)
 
 #
-#
-#
-wandb.init(project='mlx7-week1-cbow', name=f'{ts}')
-mFoo.to(dev)
-
-
-#
-#
+# TRAIN MODEL
 #
 for epoch in range(5):
-  prgs = tqdm.tqdm(dl, desc=f'Epoch {epoch+1}', leave=False)
-  for i, (ipt, trg) in enumerate(prgs):
-    ipt, trg = ipt.to(dev), trg.to(dev)
-    opFoo.zero_grad()
-    out = mFoo(ipt)
-    loss = criterion(out, trg.squeeze())
-    loss.backward()
-    opFoo.step()
-    wandb.log({'loss': loss.item()})
-    if i % 10_000 == 0: evaluate.topk(mFoo)
+    progress_bar = tqdm.tqdm(dl, desc=f"Epoch {epoch + 1}", leave=False)
+    for i, (context, target) in enumerate(progress_bar):
+        context, target = context.to(device), target.to(device)
 
-  # checkpoint
-  checkpoint_name = f'{ts}.{epoch + 1}.cbow.pth'
-  torch.save(mFoo.state_dict(), f'./checkpoints/{checkpoint_name}')
-  artifact = wandb.Artifact('model-weights', type='model')
-  artifact.add_file(f'./checkpoints/{checkpoint_name}')
-  wandb.log_artifact(artifact)
+        optimizer.zero_grad()
+        output = model_cbow(context)
+        loss = criterion(output, target.squeeze())
+        loss.backward()
+        optimizer.step()
 
+        wandb.log({"loss": loss.item()})
 
+        if i % 10000 == 0:
+            evaluate.topk(model_cbow)
+
+    # Save checkpoint
+    ckpt_path = f"./checkpoints/{timestamp}.{epoch + 1}.cbow.pth"
+    torch.save(model_cbow.state_dict(), ckpt_path)
+
+    artifact = wandb.Artifact("model-weights", type="model")
+    artifact.add_file(ckpt_path)
+    wandb.log_artifact(artifact)
+
+#
+#
 #
 #
 #

@@ -10,11 +10,17 @@ from pathlib import Path
 # CONFIGURATION
 #
 
-DATA_DIR = Path("dataprep")
-COMBINED_VOCAB_DIR = DATA_DIR / "combined_vocab"
-MS_MARCO_DIR = DATA_DIR / "ms_marco_combined"
-TOKENISED_DIR = MS_MARCO_DIR / "tokenised"
+DATA_DIR = Path(".")
+MS_MARCO_DIR = Path("dataprep/ms_marco_combined")
 SPLITS_DIR = MS_MARCO_DIR / "marco_data_splits"
+
+# Create necessary directories
+DATA_DIR.mkdir(exist_ok=True)
+MS_MARCO_DIR.mkdir(parents=True, exist_ok=True)
+SPLITS_DIR.mkdir(parents=True, exist_ok=True)
+
+# Create checkpoints directory for model saves
+Path("checkpoints").mkdir(exist_ok=True)
 
 TEXT8_URL = "https://huggingface.co/datasets/ardMLX/text8/resolve/main/text8"
 
@@ -90,10 +96,9 @@ def display_triplets(df: pd.DataFrame, int_to_vocab: dict[int, str], n: int = 5)
 def download_text8() -> list[str]:
     print("Downloading and preprocessing text8...")
 
-    COMBINED_VOCAB_DIR.mkdir(parents=True, exist_ok=True)
     r = requests.get(TEXT8_URL)
 
-    raw_path = COMBINED_VOCAB_DIR / "text8"
+    raw_path = DATA_DIR / "text8"
 
     with open(raw_path, "wb") as f:
         f.write(r.content)
@@ -144,8 +149,9 @@ def build_and_save_vocab(corpus: list[str]):
     vocab_to_int["<UNK>"] = unk_id
     int_to_vocab[unk_id] = "<UNK>"
 
-    pickle.dump(vocab_to_int, open(COMBINED_VOCAB_DIR / "tkn_vocab_to_int.pkl", "wb"))
-    pickle.dump(int_to_vocab, open(COMBINED_VOCAB_DIR / "tkn_int_to_vocab.pkl", "wb"))
+    # Save to root directory
+    pickle.dump(vocab_to_int, open(DATA_DIR / "tkn_vocab_to_int.pkl", "wb"))
+    pickle.dump(int_to_vocab, open(DATA_DIR / "tkn_int_to_vocab.pkl", "wb"))
 
     print(f"Vocabulary saved with {len(vocab_to_int):,} tokens (including <PAD>, <UNK>)")
     print(f"Vocab size (excluding <PAD>, <UNK>): {len(vocab_to_int) - 2:,}")
@@ -158,8 +164,6 @@ def build_and_save_vocab(corpus: list[str]):
 
 def tokenise_and_save_splits(vocab_to_int: dict, int_to_vocab: dict):
     print("Tokenising data splits...")
-
-    TOKENISED_DIR.mkdir(parents=True, exist_ok=True)
 
     splits = {
         "train": pd.read_parquet(SPLITS_DIR / "train.parquet"),
@@ -177,7 +181,8 @@ def tokenise_and_save_splits(vocab_to_int: dict, int_to_vocab: dict):
         df["n_len"] = df["neg_ids"].str.len()
 
         print(f"{name}: avg q {df['q_len'].mean():.1f}, p {df['p_len'].mean():.1f}, n {df['n_len'].mean():.1f}")
-        df.to_pickle(TOKENISED_DIR / f"{name}_tokenised.pkl")
+        # Save to root directory
+        df.to_pickle(DATA_DIR / f"{name}_tokenised.pkl")
 
         print(f"\nTokenised samples from {name.upper()}:")
         display_triplets(df, int_to_vocab, n=3)
@@ -192,11 +197,12 @@ if __name__ == "__main__":
     text8_tokens = download_text8()
     query_tokens, passage_tokens = process_ms_marco()
 
-    pickle.dump(query_tokens, open(COMBINED_VOCAB_DIR / "ms_marco_queries.pkl", "wb"))
-    pickle.dump(passage_tokens, open(COMBINED_VOCAB_DIR / "ms_marco_passages.pkl", "wb"))
+    # Save to root directory
+    pickle.dump(query_tokens, open(DATA_DIR / "ms_marco_queries.pkl", "wb"))
+    pickle.dump(passage_tokens, open(DATA_DIR / "ms_marco_passages.pkl", "wb"))
 
     combined_corpus = text8_tokens + query_tokens + passage_tokens
-    pickle.dump(combined_corpus, open(COMBINED_VOCAB_DIR / "combined_corpus.pkl", "wb"))
+    pickle.dump(combined_corpus, open(DATA_DIR / "combined_corpus.pkl", "wb"))
     print(f"Combined corpus has {len(combined_corpus):,} tokens")
 
     vocab_to_int, int_to_vocab = build_and_save_vocab(combined_corpus)
