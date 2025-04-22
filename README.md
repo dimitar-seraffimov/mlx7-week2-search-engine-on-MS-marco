@@ -11,7 +11,6 @@ What do we need to do tomorrow?
   -- upload to hugging face - DONE
 - 00_train_tkn.py = python script that builds a clean vocabulary from Wikipedia (text8) and MS MARCO search data ("query" + "passage_text"), then tokenises (queries and positive/negative passages) - DONE
 
-2. train the word2vec on the new vocabulary - consider the impact of negative_passage when using the CBOW 
-  -- upload to weights and biases
+2. train the word2vec on the new vocabulary 
+ -- this is too slow and not optimised, I know how to do it -> use a pretrained one
 
-Or even better! Use the these files to hugging face.
