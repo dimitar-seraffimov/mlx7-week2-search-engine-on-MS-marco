@@ -43,7 +43,7 @@ criterion = torch.nn.CrossEntropyLoss()
 # Initialize wandb
 #
 wandb.init(
-    project='mlx7-week2-search-engine',  # Your project name
+    project='mlx7-week2-search-engine',  # my project name
     name=f'cbow_{timestamp}'
 )
 model_cbow.to(device)

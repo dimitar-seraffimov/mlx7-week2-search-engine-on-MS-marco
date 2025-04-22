@@ -12,7 +12,7 @@ class Vocabulary(torch.utils.data.Dataset):
     self.vocab_to_int = pickle.load(open('./tkn_vocab_to_int.pkl', 'rb'))
     self.int_to_vocab = pickle.load(open('./tkn_int_to_vocab.pkl', 'rb'))
     self.corpus = pickle.load(open('./combined_corpus.pkl', 'rb'))
-    self.tokens = [self.vocab_to_int[word] for word in self.corpus]
+    self.tokens = [self.vocab_to_int.get(word, self.vocab_to_int["<UNK>"]) for word in self.corpus]
 
   def __len__(self):
     return len(self.tokens)
