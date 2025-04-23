@@ -9,7 +9,7 @@ from tqdm import tqdm
 import datetime
 from tower_model import TwoTowerModel
 import wandb
-from evaluate import evaluate
+from evaluate import evaluate, val_loader
 
 #
 #
@@ -121,7 +121,10 @@ def main():
 
         avg_loss = epoch_loss / len(loader)
         print(f"Epoch {epoch+1} Loss: {avg_loss:.4f}")
-        
+        val_loss = evaluate(model, val_loader, criterion)
+        print(f"[Val] Epoch {epoch+1} Validation Loss: {val_loss:.4f}")
+        wandb.log({"val_loss": val_loss, "epoch": epoch + 1})
+                
         # save checkpoint for each epoch
         checkpoint_name = f"checkpoint_hard_{timestamp}_epoch_{epoch+1}.pt"
         checkpoint_path = Path(f"../checkpoints/{checkpoint_name}")
