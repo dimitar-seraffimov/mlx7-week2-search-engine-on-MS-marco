@@ -3,7 +3,6 @@ import numpy as np
 import pandas as pd
 from tqdm import tqdm
 from pathlib import Path
-import pickle
 from tower_model import TwoTowerModel
 import chromadb
 from chromadb.config import Settings
@@ -17,8 +16,8 @@ from tkn_ms_marco import text_to_ids
 
 EMBEDDING_MATRIX_PATH = Path("../embedding_matrix.npy")
 CHECKPOINT_PATH = Path("../checkpoint_early.pt")
-TOKENISED_DATA_PATH = Path("../train_tokenised.pkl")
-OUTPUT_PATH = Path("../train_tokenised_hard.pkl")
+TOKENISED_DATA_PATH = Path("../train_tokenised.parquet")
+OUTPUT_PATH = Path("../train_tokenised_hard.parquet")
 CHROMA_COLLECTION_NAME = "document"
 
 #
@@ -50,7 +49,7 @@ model.eval()
 #
 #
 
-df = pd.read_pickle(TOKENISED_DATA_PATH)
+df = pd.read_parquet(TOKENISED_DATA_PATH)
 
 #
 #
@@ -91,7 +90,7 @@ with torch.no_grad():
         # convert hard negative text to token IDs
         # (reuse the vocab and text_to_ids function from earlier)
 
-        vocab_to_int = pickle.load(open("../tkn_vocab_to_int.pkl", "rb"))
+        vocab_to_int = pd.read_parquet("../tkn_vocab_to_int.parquet")
 
         hard_neg_ids = text_to_ids(hard_negative_text, vocab_to_int)
 

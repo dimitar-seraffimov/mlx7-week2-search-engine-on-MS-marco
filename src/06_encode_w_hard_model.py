@@ -3,7 +3,6 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 from tqdm import tqdm
-import pickle
 from tower_model import TwoTowerModel
 import chromadb
 from chromadb.config import Settings
@@ -16,7 +15,7 @@ from chromadb.config import Settings
 
 EMBEDDING_MATRIX_PATH = Path("../embedding_matrix.npy")
 CHECKPOINT_PATH = Path("../checkpoint_hard.pt")
-TOKENISED_DATA_PATH = Path("../train_tokenised_hard.pkl")  # can also be original tokenised.pkl
+TOKENISED_DATA_PATH = Path("../train_tokenised_hard.parquet")
 CHROMA_COLLECTION_NAME = "document"
 
 #
@@ -58,7 +57,7 @@ model.eval()
 #
 
 print("[Step 2] Loading tokenised data...")
-df = pd.read_pickle(TOKENISED_DATA_PATH)
+df = pd.read_parquet(TOKENISED_DATA_PATH)
 
 #
 #

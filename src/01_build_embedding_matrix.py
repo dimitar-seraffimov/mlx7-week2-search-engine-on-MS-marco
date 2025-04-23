@@ -1,5 +1,5 @@
 import numpy as np
-import pickle
+import pandas as pd
 from gensim.downloader import load
 from pathlib import Path
 
@@ -11,7 +11,7 @@ from pathlib import Path
 
 script_dir = Path(__file__).parent
 root_dir = script_dir.parent if script_dir.name == "src" else script_dir
-vocab_path = root_dir / "tkn_vocab_to_int.pkl"
+vocab_path = root_dir / "tkn_vocab_to_int.parquet"
 output_path = root_dir / "embedding_matrix.npy"
 
 #
@@ -21,7 +21,7 @@ output_path = root_dir / "embedding_matrix.npy"
 #
 
 print("[Step 1] Loading vocab...")
-vocab_to_int = pickle.load(open(vocab_path, "rb"))
+vocab_to_int = pd.read_parquet(vocab_path)
 
 #
 #

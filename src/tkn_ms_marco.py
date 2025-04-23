@@ -5,6 +5,7 @@ import tqdm
 import re
 from collections import Counter
 from pathlib import Path
+from tqdm import tqdm
 
 #
 # CONFIGURATION
@@ -90,11 +91,15 @@ def extract_tokens_from_triplets(parquet_files: list[Path]) -> list[str]:
 
     tokens = []
     for file in parquet_files:
+        print(f"\n→ Processing: {file.name}")
         df = pd.read_parquet(file)
-        for col in ['query', 'positive_passage', 'negative_passage']:
-            tokens.extend(token for text in df[col] for token in preprocess(str(text)))
-    return tokens
 
+        for col in ['query', 'positive_passage', 'negative_passage']:
+            print(f"   - Tokenizing column: {col}")
+            for text in tqdm(df[col], desc=f"   Processing {col}", leave=False):
+                tokens.extend(preprocess(str(text)))
+
+    return tokens
 #
 #
 # BUILD & SAVE VOCABULARY
@@ -122,8 +127,8 @@ def build_and_save_vocab(corpus: list[str]):
     int_to_vocab[unk_id] = "<UNK>"
 
     # Save to root directory
-    pickle.dump(vocab_to_int, open("../tkn_vocab_to_int.pkl", "wb"))
-    pickle.dump(int_to_vocab, open("../tkn_int_to_vocab.pkl", "wb"))
+    pd.DataFrame(vocab_to_int, index=[0]).to_parquet("../tkn_vocab_to_int.parquet")
+    pd.DataFrame(int_to_vocab, index=[0]).to_parquet("../tkn_int_to_vocab.parquet")
 
     print(f"Vocabulary saved with {len(vocab_to_int):,} tokens (including <PAD>, <UNK>)")
     print(f"Vocab size (excluding <PAD>, <UNK>): {len(vocab_to_int) - 2:,}")
@@ -155,7 +160,7 @@ def tokenise_and_save_splits(vocab_to_int: dict, int_to_vocab: dict):
 
         print(f"{name}: avg q {df['q_len'].mean():.1f}, p {df['p_len'].mean():.1f}, n {df['n_len'].mean():.1f}")
         # Save to root directory
-        df.to_pickle(f"../{name}_tokenised.pkl")
+        df.to_parquet(f"../{name}_tokenised.parquet")
 
         print(f"\nTokenised samples from {name.upper()}:")
         display_triplets(df, int_to_vocab, n=3)
@@ -173,7 +178,7 @@ if __name__ == "__main__":
 
     # save combined corpus
     combined_corpus = extract_tokens_from_triplets(parquet_files)
-    pickle.dump(combined_corpus, open("../combined_corpus.pkl", "wb"))
+    pd.DataFrame(combined_corpus, index=[0]).to_parquet("../combined_corpus.parquet")
     print(f"Combined corpus has {len(combined_corpus):,} tokens")
 
     # build vocab

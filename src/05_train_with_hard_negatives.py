@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
-import pickle
 import pandas as pd
 import numpy as np
 from pathlib import Path
@@ -23,7 +22,7 @@ EMBED_DIM = 300
 
 CHECKPOINT_PATH = Path("../checkpoint_hard.pt")
 EMBEDDING_MATRIX_PATH = Path("../embedding_matrix.npy")
-TRIPLETS_PATH = Path("../train_tokenised_hard.pkl")
+TRIPLETS_PATH = Path("../train_tokenised_hard.parquet")
 
 torch.manual_seed(42)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -84,7 +83,7 @@ def main():
     embedding_matrix = torch.tensor(np.load(EMBEDDING_MATRIX_PATH), dtype=torch.float32)
 
     print("[Step 2] Loading hard-negative triplets...")
-    df = pd.read_pickle(TRIPLETS_PATH)
+    df = pd.read_parquet(TRIPLETS_PATH)
     dataset = TripletDataset(df)
     loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True, collate_fn=collate_fn)
 

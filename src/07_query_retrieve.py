@@ -1,6 +1,6 @@
 import torch
 import numpy as np
-import pickle
+import pandas as pd
 from tower_model import TwoTowerModel
 from pathlib import Path
 from tkn_ms_marco import text_to_ids
@@ -13,7 +13,7 @@ from chromadb.config import Settings
 #
 #
 
-VOCAB_PATH = Path("../tkn_vocab_to_int.pkl")
+VOCAB_PATH = Path("../tkn_vocab_to_int.parquet")
 EMBEDDING_MATRIX_PATH = Path("../embedding_matrix.npy")
 CHECKPOINT_PATH = Path("../checkpoint_hard.pt")
 CHROMA_COLLECTION_NAME = "document"
@@ -24,7 +24,7 @@ CHROMA_COLLECTION_NAME = "document"
 #
 #
 
-vocab_to_int = pickle.load(open(VOCAB_PATH, "rb"))
+vocab_to_int = pd.read_parquet(VOCAB_PATH)
 
 #
 #

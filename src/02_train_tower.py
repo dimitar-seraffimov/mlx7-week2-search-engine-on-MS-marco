@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
-import pickle
 import pandas as pd
 import numpy as np
 from pathlib import Path
@@ -20,7 +19,7 @@ BATCH_SIZE = 128
 EMBED_DIM = 300
 CHECKPOINT_PATH = Path("../checkpoint_early.pt")
 EMBEDDING_MATRIX_PATH = Path("../embedding_matrix.npy")
-TRIPLETS_PATH = Path("../train_tokenised.pkl")  # using random negatives
+TRIPLETS_PATH = Path("../train_tokenised.parquet")  # using random negatives
 
 #
 #
@@ -71,7 +70,7 @@ def main():
     embedding_matrix = torch.tensor(np.load(EMBEDDING_MATRIX_PATH), dtype=torch.float32)
     
     print("[Step 1] Loading tokenised triplets...")
-    df = pd.read_pickle(TRIPLETS_PATH)
+    df = pd.read_parquet(TRIPLETS_PATH)
     dataset = TripletDataset(df)
     loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True, collate_fn=collate_fn)
 
