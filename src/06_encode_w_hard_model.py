@@ -24,10 +24,7 @@ CHROMA_COLLECTION_NAME = "document"
 #
 #
 
-chroma_client = chromadb.Client(Settings(
-    chroma_db_impl="duckdb+parquet",
-    persist_directory="../chromadb"
-))
+chroma_client = chromadb.PersistentClient(path="../chromadb")
 
 # reset collection (optional, only if you want to start fresh)
 if CHROMA_COLLECTION_NAME in [c.name for c in chroma_client.list_collections()]:
@@ -79,4 +76,3 @@ with torch.no_grad():
         )
 
 print("[✓] Encoding complete. ChromaDB updated with HARD model vectors.")
-chroma_client.persist()
