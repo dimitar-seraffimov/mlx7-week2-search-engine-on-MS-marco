@@ -138,6 +138,11 @@ def build_and_save_vocab(corpus: list[str]):
 #
 #
 
+def extract_passages(passages):
+    pos = next((p["passage_text"] for p in passages if p.get("is_selected", False)), "")
+    neg = next((p["passage_text"] for p in passages if not p.get("is_selected", False)), "")
+    return pd.Series([pos, neg])
+
 def tokenise_and_save_splits(vocab_to_int: dict, int_to_vocab: dict):
     print("Tokenising data splits...")
 
@@ -148,6 +153,9 @@ def tokenise_and_save_splits(vocab_to_int: dict, int_to_vocab: dict):
     }
 
     for name, df in splits.items():
+        # extract pos/neg from 'passages' field
+        df[["positive_passage", "negative_passage"]] = df["passages"].apply(extract_passages)
+
         df["query_ids"] = df["query"].apply(lambda x: text_to_ids(x, vocab_to_int))
         df["pos_ids"]   = df["positive_passage"].apply(lambda x: text_to_ids(x, vocab_to_int))
         df["neg_ids"]   = df["negative_passage"].apply(lambda x: text_to_ids(x, vocab_to_int))
@@ -157,7 +165,6 @@ def tokenise_and_save_splits(vocab_to_int: dict, int_to_vocab: dict):
         df["n_len"] = df["neg_ids"].str.len()
 
         print(f"{name}: avg q {df['q_len'].mean():.1f}, p {df['p_len'].mean():.1f}, n {df['n_len'].mean():.1f}")
-        # Save to root directory
         df.to_pickle(f"../{name}_tokenised.pkl")
 
         print(f"\nTokenised samples from {name.upper()}:")
