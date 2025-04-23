@@ -107,5 +107,5 @@ with torch.no_grad():
 #
 
 new_df = pd.DataFrame(hard_triplets)
-new_df.to_pickle(OUTPUT_PATH)
+new_df.to_parquet(OUTPUT_PATH, index=False)
 print(f"[✓] Saved {len(new_df)} mined triplets to: {OUTPUT_PATH}")

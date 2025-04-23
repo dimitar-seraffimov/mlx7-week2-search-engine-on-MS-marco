@@ -82,7 +82,7 @@ def main():
     embedding_matrix = torch.tensor(np.load(EMBEDDING_MATRIX_PATH), dtype=torch.float32)
 
     print("[Step 2] Loading hard-negative triplets...")
-    df = pd.read_parquet(TRIPLETS_PATH)
+    df = pd.read_pickle(TRIPLETS_PATH)
     dataset = TripletDataset(df)
     loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True, collate_fn=collate_fn)
 
