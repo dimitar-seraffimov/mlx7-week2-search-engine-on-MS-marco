@@ -1,6 +1,7 @@
 import pandas as pd
 import random
 from pathlib import Path
+from tqdm import tqdm
 
 #
 #
@@ -33,24 +34,21 @@ def build_random_neg_sampled_triplets(df: pd.DataFrame) -> pd.DataFrame:
 
     triplets = []
 
-    for row in df.itertuples():
+    for row in tqdm(df.itertuples(), total=len(df), desc="Building triplets"):
         query_text = row.query
         passages = row.passages
 
         if not isinstance(passages, dict):
             continue
 
-        # all passages linked to this query are positives
         positive_passages = [txt for txt in passages["passage_text"] if isinstance(txt, str) and txt.strip()]
         if not positive_passages:
             continue
 
-        # exclude current positives from negatives
         global_neg_pool = list(set(all_passages) - set(positive_passages))
 
-        # sample same number of negatives as positives
         if len(global_neg_pool) < len(positive_passages):
-            continue  # skip edge case
+            continue
 
         sampled_negatives = random.sample(global_neg_pool, len(positive_passages))
 
@@ -62,7 +60,6 @@ def build_random_neg_sampled_triplets(df: pd.DataFrame) -> pd.DataFrame:
             })
 
     return pd.DataFrame(triplets)
-
 #
 #
 # SPLIT DATA

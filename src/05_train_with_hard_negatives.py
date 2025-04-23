@@ -7,7 +7,9 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 from tqdm import tqdm
+import datetime
 from tower_model import TwoTowerModel
+import wandb
 
 #
 #
@@ -22,6 +24,10 @@ EMBED_DIM = 300
 CHECKPOINT_PATH = Path("../checkpoint_hard.pt")
 EMBEDDING_MATRIX_PATH = Path("../embedding_matrix.npy")
 TRIPLETS_PATH = Path("../train_tokenised_hard.pkl")
+
+torch.manual_seed(42)
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+timestamp = datetime.datetime.now().strftime('%Y_%m_%d__%H_%M_%S')
 
 #
 #
@@ -60,6 +66,20 @@ def collate_fn(batch):
 #
 
 def main():
+    wandb.init(
+        project="mlx7-week2-search-engine",
+        name=f"hard-negatives-{timestamp}",
+        config={
+            "epochs": EPOCHS,
+            "batch_size": BATCH_SIZE,
+            "lr": 1e-3,
+            "margin": 0.2,
+            "triplets_path": str(TRIPLETS_PATH),
+            "embedding_dim": EMBED_DIM
+        }
+    )
+    wandb.watch(model, log="all")
+
     print("[Step 1] Loading embedding matrix...")
     embedding_matrix = torch.tensor(np.load(EMBEDDING_MATRIX_PATH), dtype=torch.float32)
 
@@ -69,9 +89,9 @@ def main():
     loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True, collate_fn=collate_fn)
 
     print("[Step 3] Building model...")
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = TwoTowerModel(embedding_matrix).to(device)
-
+    print('Model parameters:', sum(p.numel() for p in model.parameters()))
+    
     criterion = nn.TripletMarginLoss(margin=0.2, p=2)
     optimizer = optim.Adam(model.parameters(), lr=1e-3)
 
@@ -79,26 +99,47 @@ def main():
     for epoch in range(EPOCHS):
         model.train()
         epoch_loss = 0
-
-        for batch in tqdm(loader, desc=f"Epoch {epoch+1}/{EPOCHS}"):
+        
+        progress_bar = tqdm(loader, desc=f"Epoch {epoch+1}/{EPOCHS}", leave=False)
+        for i, batch in enumerate(progress_bar):
             q = batch["query"].to(device)
             p = batch["pos"].to(device)
             n = batch["neg"].to(device)
 
+            optimizer.zero_grad()
             q_enc, p_enc, n_enc = model(q, p, n)
 
             loss = criterion(q_enc, p_enc, n_enc)
-            optimizer.zero_grad()
             loss.backward()
             optimizer.step()
 
+            # log after each batch
+            wandb.log({"loss": loss.item(), "epoch": epoch + 1, "batch": i})
+            
             epoch_loss += loss.item()
+            progress_bar.set_postfix({"loss": loss.item()})
 
         avg_loss = epoch_loss / len(loader)
         print(f"Epoch {epoch+1} Loss: {avg_loss:.4f}")
+        
+        # save checkpoint for each epoch
+        checkpoint_name = f"checkpoint_hard_{timestamp}_epoch_{epoch+1}.pt"
+        checkpoint_path = Path(f"../checkpoints/{checkpoint_name}")
+        checkpoint_path.parent.mkdir(exist_ok=True)
+        
+        torch.save(model.state_dict(), checkpoint_path)
+        
+        # log model as artifact
+        artifact = wandb.Artifact(f'model-epoch-{epoch+1}', type='model')
+        artifact.add_file(str(checkpoint_path))
+        wandb.log_artifact(artifact)
 
-    print(f"[✓] Saving checkpoint to {CHECKPOINT_PATH}")
+    # save final model
+    print(f"[✓] Saving final checkpoint to {CHECKPOINT_PATH}")
     torch.save(model.state_dict(), CHECKPOINT_PATH)
+    
+    # finish wandb run
+    wandb.finish()
     print("[DONE]")
 
 if __name__ == "__main__":
