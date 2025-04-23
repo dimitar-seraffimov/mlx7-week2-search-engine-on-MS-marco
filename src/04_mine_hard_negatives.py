@@ -87,7 +87,8 @@ with torch.no_grad():
         # convert hard negative text to token IDs
         # (reuse the vocab and text_to_ids function from earlier)
 
-        vocab_to_int = pd.read_parquet("../tkn_vocab_to_int.parquet")
+        vocab_df = pd.read_parquet("../tkn_vocab_to_int.parquet")
+        vocab_to_int = vocab_df.iloc[0].to_dict()
 
         hard_neg_ids = text_to_ids(hard_negative_text, vocab_to_int)
 
