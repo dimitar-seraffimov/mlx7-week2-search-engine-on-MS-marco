@@ -1,19 +1,23 @@
-# /src/00_tkn_ms_marco.py
-
 import pandas as pd
-import numpy as np
-import random
 import pickle
+import requests
 import tqdm
 import re
 from collections import Counter
 from pathlib import Path
 
-COMBINED_PARQUET = Path("../combined.parquet")
+#
+# CONFIGURATION
+#
 
-TRAIN_PICKLE = Path("../train_tokenised.pkl")
-VALID_PICKLE = Path("../validation_tokenised.pkl")
-TEST_PICKLE  = Path("../test_tokenised.pkl")
+COMBINED_PARQUET = Path("../combined.parquet")
+TRAIN_PARQUET = Path("../train.parquet")
+VALID_PARQUET = Path("../validation.parquet")
+TEST_PARQUET = Path("../test.parquet")
+
+#
+# TEXT PREPROCESSING
+#
 
 def preprocess(text: str) -> list[str]:
     text = text.lower()
@@ -33,6 +37,12 @@ def preprocess(text: str) -> list[str]:
         text = re.sub(pattern, replacement, text)
     return text.split()
 
+#
+#
+#
+#
+#
+
 def text_to_ids(text: str, vocab_to_int: dict[str, int], max_unk_ratio: float = 0.2) -> list[int]:
     unk_id = vocab_to_int["<UNK>"]
     words = preprocess(text)
@@ -42,8 +52,15 @@ def text_to_ids(text: str, vocab_to_int: dict[str, int], max_unk_ratio: float = 
         return []
     return ids
 
+#
+#
+#
+#
+#
+
 def display_triplets(df: pd.DataFrame, int_to_vocab: dict[int, str], n: int = 5):
     print("\nSample tokenised triplets:")
+
     shown = 0
     for _, row in df.iterrows():
         if not row["query_ids"] or not row["pos_ids"] or not row["neg_ids"]:
@@ -61,93 +78,107 @@ def display_triplets(df: pd.DataFrame, int_to_vocab: dict[int, str], n: int = 5)
         shown += 1
         if shown == n:
             break
+  
+#
+#
+#
+#
+#
 
-def extract_triplets(raw_df: pd.DataFrame, offset: int = 4) -> pd.DataFrame:
-    triplets = []
-    num_rows = len(raw_df)
-    for i in range(num_rows):
-        row = raw_df.iloc[i]
-        query = row['query']
-        passages = row['passages']
-        if not isinstance(passages, dict):
-            continue
-        is_selected = passages.get('is_selected', [])
-        passage_texts = passages.get('passage_text', [])
-        if len(is_selected) == 0 or len(passage_texts) == 0:
-            continue
-        selected_indices = np.where(np.array(is_selected) == 1)[0]
-        if selected_indices.size == 0:
-            continue
-        positive_passage = passage_texts[selected_indices[0]]
-        negative_index = (i + offset) % num_rows
-        if negative_index == i:
-            continue
-        negative_row = raw_df.iloc[negative_index]
-        neg_passages = negative_row['passages'].get('passage_text', [])
-        if not neg_passages:
-            continue
-        negative_passage = None
-        for _ in range(3):
-            candidate = random.choice(neg_passages)
-            if candidate != positive_passage:
-                negative_passage = candidate
-                break
-        if not negative_passage:
-            continue
-        triplets.append({
-            'query': query,
-            'positive_passage': positive_passage,
-            'negative_passage': negative_passage
-        })
-    return pd.DataFrame(triplets)
+def process_ms_marco() -> tuple[list[str], list[str]]:
+    print("Preprocessing MS MARCO queries and passages...")
+
+    df = pd.read_parquet(COMBINED_PARQUET)
+    query_tokens = []
+    passage_tokens = []
+    
+    for _, row in tqdm.tqdm(df.iterrows(), total=len(df), desc="Processing MS MARCO"):
+        query_tokens.extend(preprocess(str(row["query"])))
+        for passage in row["passages"]["passage_text"]:
+            passage_tokens.extend(preprocess(str(passage)))
+    return query_tokens, passage_tokens
+
+#
+# 
+# Build and save vocabulary
+#
+#
 
 def build_and_save_vocab(corpus: list[str]):
     print("Building vocabulary...")
+
     word_counts = Counter(corpus)
-    filtered = [w for w in corpus if word_counts[w] > 5]
-    sorted_vocab = sorted(set(filtered), key=lambda w: word_counts[w], reverse=True)
-    int_to_vocab = {i + 1: word for i, word in enumerate(sorted_vocab)}
+
+    # filter out words that appear less than 5 times
+    filtered_corpus = [w for w in corpus if word_counts[w] > 5]
+    # sort words by frequency
+    sorted_vocab = sorted(set(filtered_corpus), key=lambda w: word_counts[w], reverse=True)
+
+    # create int to vocab mapping
+    int_to_vocab = {idx + 1: word for idx, word in enumerate(sorted_vocab)}
     int_to_vocab[0] = "<PAD>"
-    vocab_to_int = {word: i for i, word in int_to_vocab.items()}
+    vocab_to_int = {word: idx for idx, word in int_to_vocab.items()}
+
+    # add <UNK> token to vocab at the end
     unk_id = len(vocab_to_int)
     vocab_to_int["<UNK>"] = unk_id
     int_to_vocab[unk_id] = "<UNK>"
+
+    # Save to root directory
     pickle.dump(vocab_to_int, open("../tkn_vocab_to_int.pkl", "wb"))
     pickle.dump(int_to_vocab, open("../tkn_int_to_vocab.pkl", "wb"))
+
     print(f"Vocabulary saved with {len(vocab_to_int):,} tokens (including <PAD>, <UNK>)")
+    print(f"Vocab size (excluding <PAD>, <UNK>): {len(vocab_to_int) - 2:,}")
     return vocab_to_int, int_to_vocab
 
-def tokenise_and_save(df: pd.DataFrame, name: str, vocab_to_int: dict, int_to_vocab: dict):
-    df["query_ids"] = df["query"].apply(lambda x: text_to_ids(x, vocab_to_int))
-    df["pos_ids"] = df["positive_passage"].apply(lambda x: text_to_ids(x, vocab_to_int))
-    df["neg_ids"] = df["negative_passage"].apply(lambda x: text_to_ids(x, vocab_to_int))
-    df["q_len"] = df["query_ids"].str.len()
-    df["p_len"] = df["pos_ids"].str.len()
-    df["n_len"] = df["neg_ids"].str.len()
-    print(f"{name}: avg q {df['q_len'].mean():.1f}, p {df['p_len'].mean():.1f}, n {df['n_len'].mean():.1f}")
-    df.to_pickle(f"../{name}_tokenised.pkl")
-    display_triplets(df, int_to_vocab)
+#
+#
+# Tokenise (queries and positive/negative passages) and save splits (train, validation, test)
+#
+#
+
+def tokenise_and_save_splits(vocab_to_int: dict, int_to_vocab: dict):
+    print("Tokenising data splits...")
+
+    splits = {
+        "train": pd.read_parquet(TRAIN_PARQUET),
+        "validation": pd.read_parquet(VALID_PARQUET),
+        "test": pd.read_parquet(TEST_PARQUET)
+    }
+
+    for name, df in splits.items():
+        df["query_ids"] = df["query"].apply(lambda x: text_to_ids(x, vocab_to_int))
+        df["pos_ids"]   = df["positive_passage"].apply(lambda x: text_to_ids(x, vocab_to_int))
+        df["neg_ids"]   = df["negative_passage"].apply(lambda x: text_to_ids(x, vocab_to_int))
+
+        df["q_len"] = df["query_ids"].str.len()
+        df["p_len"] = df["pos_ids"].str.len()
+        df["n_len"] = df["neg_ids"].str.len()
+
+        print(f"{name}: avg q {df['q_len'].mean():.1f}, p {df['p_len'].mean():.1f}, n {df['n_len'].mean():.1f}")
+        # Save to root directory
+        df.to_pickle(f"../{name}_tokenised.pkl")
+
+        print(f"\nTokenised samples from {name.upper()}:")
+        display_triplets(df, int_to_vocab, n=3)
+
+#
+#
+#
+#
+#
 
 if __name__ == "__main__":
-    random.seed(42)
-    df = pd.read_parquet(COMBINED_PARQUET)
-    triplets_df = extract_triplets(df, offset=4)
+    query_tokens, passage_tokens = process_ms_marco()
 
-    combined = triplets_df.sample(frac=1, random_state=42).reset_index(drop=True)
-    n = len(combined)
-    train_df = combined.iloc[:int(0.8 * n)]
-    valid_df = combined.iloc[int(0.8 * n):int(0.9 * n)]
-    test_df  = combined.iloc[int(0.9 * n):]
+    # Save to root directory
+    pickle.dump(query_tokens, open("../ms_marco_queries.pkl", "wb"))
+    pickle.dump(passage_tokens, open("../ms_marco_passages.pkl", "wb"))
 
-    print(f"Splits → train: {len(train_df)}, val: {len(valid_df)}, test: {len(test_df)}")
+    combined_corpus = query_tokens + passage_tokens
+    pickle.dump(combined_corpus, open("../combined_corpus.pkl", "wb"))
+    print(f"Combined corpus has {len(combined_corpus):,} tokens")
 
-    # Build vocab
-    all_tokens = []
-    for col in ["query", "positive_passage", "negative_passage"]:
-        all_tokens.extend([t for row in triplets_df[col] for t in preprocess(row)])
-    vocab_to_int, int_to_vocab = build_and_save_vocab(all_tokens)
-
-    # Tokenise each split
-    tokenise_and_save(train_df, "train", vocab_to_int, int_to_vocab)
-    tokenise_and_save(valid_df, "validation", vocab_to_int, int_to_vocab)
-    tokenise_and_save(test_df,  "test", vocab_to_int, int_to_vocab)
+    vocab_to_int, int_to_vocab = build_and_save_vocab(combined_corpus)
+    tokenise_and_save_splits(vocab_to_int, int_to_vocab)
