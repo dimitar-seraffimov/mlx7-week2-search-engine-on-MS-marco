@@ -21,8 +21,8 @@ output_path = root_dir / "embedding_matrix.npy"
 #
 
 print("[Step 1] Loading vocab...")
-vocab_to_int = pd.read_parquet(vocab_path)
-
+df_vocab = pd.read_parquet(vocab_path)
+vocab_to_int = df_vocab.iloc[0].to_dict()
 #
 #
 # STEP 3: Load pretrained word2vec model
