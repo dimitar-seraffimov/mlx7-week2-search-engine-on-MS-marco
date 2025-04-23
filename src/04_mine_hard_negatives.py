@@ -47,6 +47,11 @@ model.eval()
 #
 
 df = pd.read_parquet(TOKENISED_DATA_PATH)
+# convert hard negative text to token IDs
+# (reuse the vocab and text_to_ids function from earlier)
+
+vocab_df = pd.read_parquet("../tkn_vocab_to_int.parquet")
+vocab_to_int = vocab_df.iloc[0].to_dict()
 
 #
 #
@@ -83,12 +88,6 @@ with torch.no_grad():
 
         if hard_negative_text is None:
             continue  # fallback: skip if nothing found
-
-        # convert hard negative text to token IDs
-        # (reuse the vocab and text_to_ids function from earlier)
-
-        vocab_df = pd.read_parquet("../tkn_vocab_to_int.parquet")
-        vocab_to_int = vocab_df.iloc[0].to_dict()
 
         hard_neg_ids = text_to_ids(hard_negative_text, vocab_to_int)
 
