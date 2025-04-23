@@ -11,16 +11,17 @@ from tower_model import TwoTowerModel
 
 #
 #
-# CONFIGURATION
+# SETUP
 #
 #
 
-EPOCHS = 3
+EPOCHS = 10
 BATCH_SIZE = 128
 EMBED_DIM = 300
-CHECKPOINT_PATH = Path("../checkpoint_early.pt")
+
+CHECKPOINT_PATH = Path("../checkpoint_hard.pt")
 EMBEDDING_MATRIX_PATH = Path("../embedding_matrix.npy")
-TRIPLETS_PATH = Path("../train_tokenised.pkl")  # using random negatives
+TRIPLETS_PATH = Path("../train_tokenised_hard.pkl")
 
 #
 #
@@ -54,35 +55,27 @@ def collate_fn(batch):
 
 #
 #
-# MODEL
-#
-#
-
-# Model definition moved at tower_model.py
-
-#
-#
 # TRAINING
 #
 #
 
 def main():
-    # load embedding matrix
+    print("[Step 1] Loading embedding matrix...")
     embedding_matrix = torch.tensor(np.load(EMBEDDING_MATRIX_PATH), dtype=torch.float32)
-    
-    print("[Step 1] Loading tokenised triplets...")
+
+    print("[Step 2] Loading hard-negative triplets...")
     df = pd.read_pickle(TRIPLETS_PATH)
     dataset = TripletDataset(df)
     loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=True, collate_fn=collate_fn)
 
-    print("[Step 2] Building model...")
+    print("[Step 3] Building model...")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = TwoTowerModel(embedding_matrix).to(device)
 
     criterion = nn.TripletMarginLoss(margin=0.2, p=2)
     optimizer = optim.Adam(model.parameters(), lr=1e-3)
 
-    print("[Step 3] Starting training...")
+    print("[Step 4] Training with HARD negatives...")
     for epoch in range(EPOCHS):
         model.train()
         epoch_loss = 0

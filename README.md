@@ -70,7 +70,7 @@ Instructions to run what I have:
 - create triplets for the individual splits by running
   python create_triplets.py
 - tokenise:
-  python 00_tkn_ms_marco.py
+  python tkn_ms_marco.py
 - build vocab embeddins:
   python 01_build_embedding_matrix.py
 - train initial Two-Tower model on random triplets
