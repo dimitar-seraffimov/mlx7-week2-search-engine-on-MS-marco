@@ -5,8 +5,8 @@ from tqdm import tqdm
 from pathlib import Path
 from tower_model import TwoTowerModel
 import chromadb
-from chromadb.config import Settings
 from tkn_ms_marco import text_to_ids
+import torch.nn as nn
 
 #
 #
