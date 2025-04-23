@@ -54,3 +54,9 @@ What do we need to do tomorrow?
    collection.query(query_embeddings=[...], n_results=5)
    ```
 
+Instructions to run what I have:
+
+- combine the files by running dataprep/combine_data.py
+- create triplets for the individual splits from dataprep/train_tkn.ipynb
+- python 00_tkn_ms_marco.py
+- 01_build_embedding_matrix.py
