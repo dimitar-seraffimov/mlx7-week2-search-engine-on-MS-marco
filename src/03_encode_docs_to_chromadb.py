@@ -24,10 +24,7 @@ CHROMA_COLLECTION_NAME = "document"
 #
 #
 
-chroma_client = chromadb.Client(Settings(
-    chroma_db_impl="duckdb+parquet",
-    persist_directory="../chromadb"
-))
+chroma_client = chromadb.PersistentClient(path="../chromadb")
 
 #
 #
