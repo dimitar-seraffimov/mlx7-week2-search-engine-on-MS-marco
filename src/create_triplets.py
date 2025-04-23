@@ -1,89 +1,105 @@
 import pandas as pd
 import random
-import numpy as np
 from pathlib import Path
 
 #
 #
-# STEP 1: 
-# Build balanced triplets
+# SETUP
+#
 #
 
-def build_balanced_triplets(df: pd.DataFrame) -> pd.DataFrame:
+DATA_PATH = Path("../combined.parquet")
+OUTPUT_TRAIN = Path("../train.parquet")
+OUTPUT_VAL = Path("../validation.parquet")
+OUTPUT_TEST = Path("../test.parquet")
+
+
+#
+#
+# BUILD TRIPLETS
+#
+#
+
+def build_random_neg_sampled_triplets(df: pd.DataFrame) -> pd.DataFrame:
+    all_passages = []
+
+    for row in df.itertuples():
+        passages = row.passages
+        if not isinstance(passages, dict):
+            continue
+        all_passages.extend([txt for txt in passages["passage_text"] if isinstance(txt, str) and txt.strip()])
+
+    print(f"[Info] Total unique passages for global negative pool: {len(all_passages):,}")
+
     triplets = []
 
     for row in df.itertuples():
-        query_id = row.query_id
         query_text = row.query
         passages = row.passages
 
         if not isinstance(passages, dict):
             continue
 
-        pos_texts = [txt for sel, txt in zip(passages['is_selected'], passages['passage_text'])
-                     if sel == 1 and isinstance(txt, str) and txt.strip()]
-
-        neg_texts_pool = [txt for sel, txt in zip(passages['is_selected'], passages['passage_text'])
-                          if sel == 0 and isinstance(txt, str) and txt.strip()]
-
-        if not pos_texts or not neg_texts_pool:
+        # all passages linked to this query are positives
+        positive_passages = [txt for txt in passages["passage_text"] if isinstance(txt, str) and txt.strip()]
+        if not positive_passages:
             continue
 
-        # Sample same number of negatives as positives
-        neg_texts = random.sample(neg_texts_pool, min(len(pos_texts), len(neg_texts_pool)))
+        # exclude current positives from negatives
+        global_neg_pool = list(set(all_passages) - set(positive_passages))
 
-        for pos, neg in zip(pos_texts, neg_texts):
+        # sample same number of negatives as positives
+        if len(global_neg_pool) < len(positive_passages):
+            continue  # skip edge case
+
+        sampled_negatives = random.sample(global_neg_pool, len(positive_passages))
+
+        for pos, neg in zip(positive_passages, sampled_negatives):
             triplets.append({
-                'query': query_text,
-                'positive_passage': pos,
-                'negative_passage': neg
+                "query": query_text,
+                "positive_passage": pos,
+                "negative_passage": neg
             })
 
     return pd.DataFrame(triplets)
 
 #
 #
-# STEP 2:
-# shuffle and split into train/val/test
+# SPLIT DATA
+#
 #
 
-def shuffle_and_split_triplets(triplets_df: pd.DataFrame, train_ratio=0.8, val_ratio=0.1):
-    triplets_df = triplets_df.sample(frac=1, random_state=42).reset_index(drop=True)
-    n = len(triplets_df)
-    n_train = int(train_ratio * n)
-    n_val = int(val_ratio * n)
-
-    train_df = triplets_df.iloc[:n_train]
-    val_df = triplets_df.iloc[n_train:n_train + n_val]
-    test_df = triplets_df.iloc[n_train + n_val:]
-
-    return train_df, val_df, test_df
+def shuffle_and_split_triplets(df: pd.DataFrame, train_ratio=0.8, val_ratio=0.1):
+    df = df.sample(frac=1, random_state=42).reset_index(drop=True)
+    n = len(df)
+    n_train = int(n * train_ratio)
+    n_val = int(n * val_ratio)
+    return df[:n_train], df[n_train:n_train + n_val], df[n_train + n_val:]
 
 #
 #
-#
+# RUN
 #
 #
 
 def main():
     random.seed(42)
-    df = pd.read_parquet("../combined.parquet")
-    print(f"Loaded {len(df)} queries.")
 
-    triplets_df = build_balanced_triplets(df)
-    print(f"Generated {len(triplets_df)} balanced triplets.")
+    df = pd.read_parquet(DATA_PATH)
+    print(f"Loaded {len(df)} queries")
+
+    triplets_df = build_random_neg_sampled_triplets(df)
+    print(f"[✓] Created {len(triplets_df):,} triplets")
 
     train_df, val_df, test_df = shuffle_and_split_triplets(triplets_df)
-    print(f"Train: {len(train_df)}, Validation: {len(val_df)}, Test: {len(test_df)}")
+    print(f"Train: {len(train_df)} | Val: {len(val_df)} | Test: {len(test_df)}")
 
-    train_df.to_parquet("../train.parquet", index=False)
-    val_df.to_parquet("../validation.parquet", index=False)
-    test_df.to_parquet("../test.parquet", index=False)
+    train_df.to_parquet(OUTPUT_TRAIN, index=False)
+    val_df.to_parquet(OUTPUT_VAL, index=False)
+    test_df.to_parquet(OUTPUT_TEST, index=False)
 
-    # Sample preview
-    print("\nSample triplets:")
-    print(train_df.sample(5, random_state=42)[['query', 'positive_passage', 'negative_passage']].to_string(index=False))
-
+    print("\n[Sample Triplets]")
+    print(train_df.sample(5)[["query", "positive_passage", "negative_passage"]].to_string(index=False))
 
 if __name__ == "__main__":
     main()
