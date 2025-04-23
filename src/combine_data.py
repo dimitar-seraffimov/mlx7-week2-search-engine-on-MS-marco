@@ -3,14 +3,25 @@ import os
 import requests
 from pathlib import Path
 
-# Hugging Face Parquet URLs (v1.1)
+#
+#
+# SETUP:
+# Set Hugging Face Parquet URLs (v1.1)
+#
+#
+
 HF_PARQUET_URLS = {
     "train": "https://huggingface.co/datasets/microsoft/ms_marco/resolve/main/v1.1/train-00000-of-00001.parquet",
     "validation": "https://huggingface.co/datasets/microsoft/ms_marco/resolve/main/v1.1/validation-00000-of-00001.parquet",
     "test": "https://huggingface.co/datasets/microsoft/ms_marco/resolve/main/v1.1/test-00000-of-00001.parquet",
 }
 
-# Download helper
+#
+#
+# DOWNLOAD:
+#
+#
+
 def download_if_not_exists(url, path):
     path = Path(path)
     if path.exists():
@@ -20,7 +31,12 @@ def download_if_not_exists(url, path):
     r = requests.get(url)
     path.write_bytes(r.content)
 
-# Download and load
+#
+#
+# DOWNLOAD & LOAD:
+#
+#
+
 splits = {}
 for name, url in HF_PARQUET_URLS.items():
     parquet_path = f"../{name}.parquet"
@@ -29,11 +45,21 @@ for name, url in HF_PARQUET_URLS.items():
     print(f"Loading {name} data from {parquet_path}")
     splits[name] = pd.read_parquet(parquet_path)
 
-# Combine
+#
+#
+# COMBINE:
+#
+#
+
 print("Combining datasets...")
 combined_data = pd.concat(list(splits.values()), ignore_index=True)
 
-# Save
+#
+#
+# SAVE:
+#
+#
+
 output_file = "../combined.parquet"
 combined_data.to_parquet(output_file)
 

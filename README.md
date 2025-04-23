@@ -5,9 +5,18 @@ Building a search engine which takes in queries and produces a list of relevant 
 
 We will build an appropriate architecture and train it on data from Microsoft Machine Reading Comprehension (MS MARCO), which is a collection of datasets for deep learning related to search tasks. <br> Datasets v1.1(102k rows) and v2.1(1.01M rows) from: https://huggingface.co/datasets/microsoft/ms_marco/viewer/v1.1/train?views%5B%5D=v11_train
 
-What do we need to do tomorrow?
+STEPS:
 
-0. Load Pretrained GloVe
+0. Combine MS Marco splits into one file
+
+   - python combine_data.py
+
+1. Create random triplets
+
+   - python create_triplets.py
+   - length of positive samples = length of negative samples
+
+2. Load - Pretrained GloVe
    builds:
 
    - vocab_to_int → {word: id}
@@ -16,7 +25,7 @@ What do we need to do tomorrow?
 
    Save: - vocab_to_int.pkl, int_to_vocab.pkl - glove.6B.300d.npy (the matrix)
 
-1. Preprocess & Tokenise MS MARCO v1.1 using GloVe vocab
+3. Preprocess & Tokenise MS MARCO v1.1 using GloVe vocab
 
    - create Triplets (Query, Positive, Negatives)
    - start with: Random negative sampling
@@ -26,15 +35,15 @@ What do we need to do tomorrow?
    - train the model on the random negatives saved in train_tokenised.pkl as training base
    - BM25-ranked negatives (Hard negatives) - too slow and unneficient
 
-2. Build embedding_matrix.npy - 01_build_embedding_matrix.py
+4. Build embedding_matrix.npy - 01_build_embedding_matrix.py
 
-3. Train Initial Two-Tower Model on Random Triplets - 02_train_tower.py
+5. Train Initial Two-Tower Model on Random Triplets - 02_train_tower.py
 
    - use train_tokenised.pkl (random negatives)
    - save a checkpoint after a few epochs (enough for "confusion" to emerge)
    - freeze or continue training later = the goal is to get a model that starts to "believe" which documents are relevant — and get confused by tricky ones => then stop and mine hard negatives
 
-4. Encode & Retrieve top-k + store in ChromaDB
+6. Encode & Retrieve top-k + store in ChromaDB
 
    - encode all passages and save their vectors to ChromaDB:
 
@@ -56,7 +65,15 @@ What do we need to do tomorrow?
 
 Instructions to run what I have:
 
-- combine the files by running dataprep/combine_data.py
-- create triplets for the individual splits by running - dataprep/create_triplets.py
-- python 00_tkn_ms_marco.py
-- 01_build_embedding_matrix.py
+- combine the files by running
+  python combine_data.py
+- create triplets for the individual splits by running
+  python create_triplets.py
+- tokenise:
+  python 00_tkn_ms_marco.py
+- build vocab embeddins:
+  python 01_build_embedding_matrix.py
+- train initial Two-Tower model on random triplets
+  python 02_train_tower.py
+
+What do we need to do tomorrow?
