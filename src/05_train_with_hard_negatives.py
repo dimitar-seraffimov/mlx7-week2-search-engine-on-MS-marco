@@ -77,7 +77,6 @@ def main():
             "embedding_dim": EMBED_DIM
         }
     )
-    wandb.watch(model, log="all")
 
     print("[Step 1] Loading embedding matrix...")
     embedding_matrix = torch.tensor(np.load(EMBEDDING_MATRIX_PATH), dtype=torch.float32)
@@ -89,6 +88,7 @@ def main():
 
     print("[Step 3] Building model...")
     model = TwoTowerModel(embedding_matrix).to(device)
+    wandb.watch(model, log="all") 
     print('Model parameters:', sum(p.numel() for p in model.parameters()))
     
     criterion = nn.TripletMarginLoss(margin=0.2, p=2)
