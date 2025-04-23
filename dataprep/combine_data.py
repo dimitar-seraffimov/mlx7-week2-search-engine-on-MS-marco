@@ -12,6 +12,7 @@ HF_PARQUET_URLS = {
 
 # Download helper
 def download_if_not_exists(url, path):
+    path = Path(path)
     if path.exists():
         print(f"[SKIP] Already downloaded: {path}")
         return
