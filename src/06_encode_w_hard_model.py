@@ -54,7 +54,7 @@ model.eval()
 #
 
 print("[Step 2] Loading tokenised data...")
-df = pd.read_parquet(TOKENISED_DATA_PATH)
+df = pd.read_pickle(TOKENISED_DATA_PATH)
 
 #
 #

@@ -9,6 +9,7 @@ from tqdm import tqdm
 import datetime
 from tower_model import TwoTowerModel
 import wandb
+from evaluate import evaluate
 
 #
 #
