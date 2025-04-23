@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 from tqdm import tqdm
-from src.tower_model import TwoTowerModel
+from tower_model import TwoTowerModel
 
 #
 #
