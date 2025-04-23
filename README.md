@@ -57,6 +57,6 @@ What do we need to do tomorrow?
 Instructions to run what I have:
 
 - combine the files by running dataprep/combine_data.py
-- create triplets for the individual splits from dataprep/train_tkn.ipynb
+- create triplets for the individual splits by running - dataprep/create_triplets.py
 - python 00_tkn_ms_marco.py
 - 01_build_embedding_matrix.py

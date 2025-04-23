@@ -29,7 +29,7 @@ def extract_triplets(df: pd.DataFrame, offset: int = 4) -> pd.DataFrame:
             continue
         sel = passages.get('is_selected', [])
         texts = passages.get('passage_text', [])
-        if not sel or not texts:
+        if len(sel) == 0 or len(texts) == 0:
             continue
         pos_idxs = np.where(np.array(sel) == 1)[0]
         if pos_idxs.size == 0:
@@ -40,7 +40,7 @@ def extract_triplets(df: pd.DataFrame, offset: int = 4) -> pd.DataFrame:
         if not isinstance(neg_passages, dict):
             continue
         neg_texts = neg_passages.get('passage_text', [])
-        if not neg_texts:
+        if len(neg_texts) == 0:
             continue
         negative = None
         for _ in range(3):
@@ -56,6 +56,7 @@ def extract_triplets(df: pd.DataFrame, offset: int = 4) -> pd.DataFrame:
             'negative_passage': negative
         })
     return pd.DataFrame(triples)
+
 
 def main():
     random.seed(42)
