@@ -5,6 +5,7 @@ import tqdm
 import re
 from collections import Counter
 from pathlib import Path
+from tqdm import tqdm
 
 #
 # CONFIGURATION
@@ -39,7 +40,7 @@ def preprocess(text: str) -> list[str]:
 
 #
 #
-#
+# TOKENISE TEXT
 #
 #
 
@@ -54,7 +55,7 @@ def text_to_ids(text: str, vocab_to_int: dict[str, int], max_unk_ratio: float = 
 
 #
 #
-#
+# DISPLAY SAMPLE TOKENISED TRIPLETS
 #
 #
 
@@ -81,26 +82,27 @@ def display_triplets(df: pd.DataFrame, int_to_vocab: dict[int, str], n: int = 5)
   
 #
 #
-#
+# EXTRACT TOKENS FROM TRIPLETS
 #
 #
 
-def process_ms_marco() -> tuple[list[str], list[str]]:
-    print("Preprocessing MS MARCO queries and passages...")
+def extract_tokens_from_triplets(parquet_files: list[Path]) -> list[str]:
+    print("Extracting tokens from triplets...")
 
-    df = pd.read_parquet(COMBINED_PARQUET)
-    query_tokens = []
-    passage_tokens = []
-    
-    for _, row in tqdm.tqdm(df.iterrows(), total=len(df), desc="Processing MS MARCO"):
-        query_tokens.extend(preprocess(str(row["query"])))
-        for passage in row["passages"]["passage_text"]:
-            passage_tokens.extend(preprocess(str(passage)))
-    return query_tokens, passage_tokens
+    tokens = []
+    for file in parquet_files:
+        print(f"\n→ Processing: {file.name}")
+        df = pd.read_parquet(file)
 
+        for col in ['query', 'positive_passage', 'negative_passage']:
+            print(f"   - Tokenizing column: {col}")
+            for text in tqdm(df[col], desc=f"   Processing {col}", leave=False):
+                tokens.extend(preprocess(str(text)))
+
+    return tokens
 #
-# 
-# Build and save vocabulary
+#
+# BUILD & SAVE VOCABULARY
 #
 #
 
@@ -125,8 +127,8 @@ def build_and_save_vocab(corpus: list[str]):
     int_to_vocab[unk_id] = "<UNK>"
 
     # Save to root directory
-    pickle.dump(vocab_to_int, open("../tkn_vocab_to_int.pkl", "wb"))
-    pickle.dump(int_to_vocab, open("../tkn_int_to_vocab.pkl", "wb"))
+    pd.DataFrame(vocab_to_int, index=[0]).to_parquet("../tkn_vocab_to_int.parquet")
+    pd.DataFrame(int_to_vocab, index=[0]).to_parquet("../tkn_int_to_vocab.parquet")
 
     print(f"Vocabulary saved with {len(vocab_to_int):,} tokens (including <PAD>, <UNK>)")
     print(f"Vocab size (excluding <PAD>, <UNK>): {len(vocab_to_int) - 2:,}")
@@ -134,7 +136,7 @@ def build_and_save_vocab(corpus: list[str]):
 
 #
 #
-# Tokenise (queries and positive/negative passages) and save splits (train, validation, test)
+# TOKENISE & SAVE SPLITS
 #
 #
 
@@ -158,7 +160,7 @@ def tokenise_and_save_splits(vocab_to_int: dict, int_to_vocab: dict):
 
         print(f"{name}: avg q {df['q_len'].mean():.1f}, p {df['p_len'].mean():.1f}, n {df['n_len'].mean():.1f}")
         # Save to root directory
-        df.to_pickle(f"{name}_tokenised.pkl")
+        df.to_parquet(f"../{name}_tokenised.parquet")
 
         print(f"\nTokenised samples from {name.upper()}:")
         display_triplets(df, int_to_vocab, n=3)
@@ -170,15 +172,16 @@ def tokenise_and_save_splits(vocab_to_int: dict, int_to_vocab: dict):
 #
 
 if __name__ == "__main__":
-    query_tokens, passage_tokens = process_ms_marco()
 
-    # Save to root directory
-    pickle.dump(query_tokens, open("../ms_marco_queries.pkl", "wb"))
-    pickle.dump(passage_tokens, open("../ms_marco_passages.pkl", "wb"))
+    # build vocab from already-created triplets
+    parquet_files = [TRAIN_PARQUET, VALID_PARQUET, TEST_PARQUET]
 
-    combined_corpus = query_tokens + passage_tokens
-    pickle.dump(combined_corpus, open("../combined_corpus.pkl", "wb"))
+    # save combined corpus
+    combined_corpus = extract_tokens_from_triplets(parquet_files)
+    pd.DataFrame({"token": combined_corpus}).to_parquet("../combined_corpus.parquet", index=False)
     print(f"Combined corpus has {len(combined_corpus):,} tokens")
 
+    # build vocab
     vocab_to_int, int_to_vocab = build_and_save_vocab(combined_corpus)
+    # tokenise and save splits
     tokenise_and_save_splits(vocab_to_int, int_to_vocab)

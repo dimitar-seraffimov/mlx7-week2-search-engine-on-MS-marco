@@ -1,0 +1,64 @@
+🔥 Here's exactly what to install on your **rented GPU VM** before `pip install -r requirements.txt` — clean, minimal, and CUDA-ready:
+
+---
+
+## **1. Basic Ubuntu + Python Setup**
+If you're using a base Ubuntu or CUDA image, install these first:
+
+```bash
+sudo apt update
+sudo apt install -y python3 python3-pip python3-venv build-essential
+```
+
+---
+
+## **2. Create a Python Virtual Environment**
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+---
+
+## **3. Upgrade pip & wheel**
+
+```bash
+pip install --upgrade pip setuptools wheel
+```
+
+---
+
+## **4. Make sure NVIDIA drivers + CUDA toolkit are installed**
+You can test this:
+```bash
+nvidia-smi
+```
+
+To install drivers manually (if needed):
+```bash
+sudo apt install -y nvidia-driver-535
+reboot
+```
+Or if using `conda`/`venv`, ensure `torch` uses the right CUDA version (see below).
+---
+
+## **5. Install PyTorch w/ CUDA (first)**  
+*Before requirements.txt*, ensure you install **PyTorch compiled for GPU**:
+
+```bash
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+```
+
+---
+
+## **6. Now install your project dependencies**
+Make sure `requirements.txt` **does not pin incompatible versions** like `ipython==9.1.0` or `pywin32`.
+
+```bash
+pip install -r requirements.txt
+```
+
+If you see errors:
+- `pywin32` → remove (Windows-only)
+- `ipython==9.1.0` → replace with `ipython>=8.0.0`

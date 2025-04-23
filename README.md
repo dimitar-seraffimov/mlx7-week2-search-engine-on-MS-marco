@@ -5,35 +5,43 @@ Building a search engine which takes in queries and produces a list of relevant 
 
 We will build an appropriate architecture and train it on data from Microsoft Machine Reading Comprehension (MS MARCO), which is a collection of datasets for deep learning related to search tasks. <br> Datasets v1.1(102k rows) and v2.1(1.01M rows) from: https://huggingface.co/datasets/microsoft/ms_marco/viewer/v1.1/train?views%5B%5D=v11_train
 
+Instructions:
+
+- combine MS MARCO splits into one file
+  python combine_data.py
+- Create triplets (query, positive, random negative)
+  python create_triplets.py
+- tokenise queries & passages using GloVe vocab
+  python tkn_ms_marco.py
+- build vocab embeddins:
+  python 01_build_embedding_matrix.py
+- train initial Two-Tower model on random triplets
+  python 02_train_tower.py
+- save encodings to chromadb
+  python 03_encode_docs_to_chromadb.py
+- mine hard negatives using ChromaDB + trained model
+  python 04_mine_hard_negatives.py
+- train Two-Tower model again with hard negatives
+  python 05_train_with_hard_negatives.py
+- re-encode passages using the improved model
+  python 06_encode_passages_with_hard_model.py
+- run real user queries against ChromaDB
+  python 07_query_chromadb.py
+
 What do we need to do tomorrow?
 
-1. Load Pretrained GloVe
-   Builds:
-   - vocab_to_int → {word: id}
-   - int_to_vocab → {id: word}
-   - embedding_matrix → torch.FloatTensor(n_vocab x 300)
+- use parquet not pkl! - changed that already
 
-Save: - vocab_to_int.pkl, int_to_vocab.pkl - glove.6B.300d.npy (the matrix)
+- re-encode passages with the improved model
+  run 06_encode_w_hard_model.py
 
-2. Preprocess & Tokenise MS MARCO v1.1 (the large dataset) using GloVe vocab
+- run user queries
+  python 07_query_chromadb.py
 
-- Save as triplets_glove_tokenised.pkl
+- try to implement RNN-based encoder
+  replace the average pooling in the current Two-Tower model with a GRU or LSTM.
+  update the TwoTowerModel to use an RNN encoder for both query and passage towers.
 
-3. Create Triplets (Query, Positive, Negatives) on the MS Marco v2.2
-
-- Start with: Random negative sampling
-  For every query:
-
-  - 1 positive passage (from MS MARCO labels)
-  - 1 random document as negative (not in its label set)
-
-- Upgrade to: BM25-ranked negatives (Hard negatives) - do this directly?
-  This step gives much stronger negatives and helps model generalise better.
-
-4. Generate Embeddings (for Pos/Neg only)
-
-5. Store in ChromaDB
-
-6. Build Two-Tower Model - have 1-5 done on wednesday, implement this step on Thursday
-
-- having the BM25-ranked negatives (Hard negatives) will help the model massively (or at least I hope so)
+- train the RNN version
+  adapt the training script (e.g. 02_train_tower.py) to train the RNN-based model.
+  log and compare performance with the baseline using Weights & Biases.
