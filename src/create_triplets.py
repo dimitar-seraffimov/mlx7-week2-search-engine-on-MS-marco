@@ -95,8 +95,13 @@ def main():
     val_df.to_parquet(OUTPUT_VAL, index=False)
     test_df.to_parquet(OUTPUT_TEST, index=False)
 
-    print("\n[Sample Triplets]")
-    print(train_df.sample(5)[["query", "positive_passage", "negative_passage"]].to_string(index=False))
+    #print("\n[Sample Triplets]")
+    #print(train_df.sample(5)[["query", "positive_passage", "negative_passage"]].to_string(index=False))
+    
+    query_counts = triplets_df.groupby("query").size()
+    print("\nTriplet count per query (first 10):")
+    print(query_counts.head(10))
+    print(f"\nAverage triplets per query: {query_counts.mean():.2f}")
 
 if __name__ == "__main__":
     main()
