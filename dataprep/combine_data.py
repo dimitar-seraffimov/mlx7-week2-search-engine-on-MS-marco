@@ -10,11 +10,6 @@ HF_PARQUET_URLS = {
     "test": "https://huggingface.co/datasets/microsoft/ms_marco/resolve/main/v1.1/test-00000-of-00001.parquet",
 }
 
-# Paths
-data_dir = Path(__file__).parent
-output_dir = data_dir / "ms_marco_combined"
-output_dir.mkdir(exist_ok=True)
-
 # Download helper
 def download_if_not_exists(url, path):
     if path.exists():
@@ -27,7 +22,7 @@ def download_if_not_exists(url, path):
 # Download and load
 splits = {}
 for name, url in HF_PARQUET_URLS.items():
-    parquet_path = data_dir / f"{name}.parquet"
+    parquet_path = f"../{name}.parquet"
     download_if_not_exists(url, parquet_path)
 
     print(f"Loading {name} data from {parquet_path}")
@@ -38,7 +33,7 @@ print("Combining datasets...")
 combined_data = pd.concat(list(splits.values()), ignore_index=True)
 
 # Save
-output_file = output_dir / "combined.parquet"
+output_file = "../combined.parquet"
 combined_data.to_parquet(output_file)
 
 print(f"[DONE] Combined dataset saved to {output_file}")
