@@ -158,7 +158,7 @@ def tokenise_and_save_splits(vocab_to_int: dict, int_to_vocab: dict):
 
         print(f"{name}: avg q {df['q_len'].mean():.1f}, p {df['p_len'].mean():.1f}, n {df['n_len'].mean():.1f}")
         # Save to root directory
-        df.to_pickle(f"{name}_tokenised.pkl")
+        df.to_pickle(f"../{name}_tokenised.pkl")
 
         print(f"\nTokenised samples from {name.upper()}:")
         display_triplets(df, int_to_vocab, n=3)
