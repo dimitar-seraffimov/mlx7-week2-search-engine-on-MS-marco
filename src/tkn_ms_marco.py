@@ -178,7 +178,7 @@ if __name__ == "__main__":
 
     # save combined corpus
     combined_corpus = extract_tokens_from_triplets(parquet_files)
-    pd.DataFrame(combined_corpus, index=[0]).to_parquet("../combined_corpus.parquet")
+    pd.DataFrame({"token": combined_corpus}).to_parquet("../combined_corpus.parquet", index=False)
     print(f"Combined corpus has {len(combined_corpus):,} tokens")
 
     # build vocab
