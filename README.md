@@ -30,4 +30,18 @@ Instructions:
 
 What do we need to do tomorrow?
 
-- use parquet not pkl
+- use parquet not pkl! - changed that already
+
+- re-encode passages with the improved model
+  run 06_encode_w_hard_model.py
+
+- run user queries
+  python 07_query_chromadb.py
+
+- try to implement RNN-based encoder
+  replace the average pooling in the current Two-Tower model with a GRU or LSTM.
+  update the TwoTowerModel to use an RNN encoder for both query and passage towers.
+
+- train the RNN version
+  adapt the training script (e.g. 02_train_tower.py) to train the RNN-based model.
+  log and compare performance with the baseline using Weights & Biases.
