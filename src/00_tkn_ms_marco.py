@@ -5,6 +5,7 @@ import tqdm
 import re
 from collections import Counter
 from pathlib import Path
+import json
 
 #
 # CONFIGURATION
@@ -139,8 +140,18 @@ def build_and_save_vocab(corpus: list[str]):
 #
 
 def extract_passages(passages):
-    pos = next((p["passage_text"] for p in passages if p.get("is_selected", False)), "")
-    neg = next((p["passage_text"] for p in passages if not p.get("is_selected", False)), "")
+    # if passages is a JSON string, decode it
+    if isinstance(passages, str):
+        try:
+            passages = json.loads(passages)
+        except json.JSONDecodeError:
+            return pd.Series(["", ""])  # fallback if broken
+
+    if not isinstance(passages, list):
+        return pd.Series(["", ""])
+
+    pos = next((p.get("passage_text", "") for p in passages if isinstance(p, dict) and p.get("is_selected", False)), "")
+    neg = next((p.get("passage_text", "") for p in passages if isinstance(p, dict) and not p.get("is_selected", False)), "")
     return pd.Series([pos, neg])
 
 def tokenise_and_save_splits(vocab_to_int: dict, int_to_vocab: dict):
