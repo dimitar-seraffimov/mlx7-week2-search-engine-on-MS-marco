@@ -68,7 +68,6 @@ def encode_passages():
             )
 
     print("[✓] Encoding complete. Collection saved.")
-    chroma_client.persist()
 
 #
 # RUN
