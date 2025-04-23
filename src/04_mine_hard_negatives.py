@@ -19,6 +19,7 @@ CHECKPOINT_PATH = Path("../checkpoint_early.pt")
 TOKENISED_DATA_PATH = Path("../train_tokenised.parquet")
 OUTPUT_PATH = Path("../train_tokenised_hard.parquet")
 CHROMA_COLLECTION_NAME = "document"
+BATCH_SIZE = 1024
 
 #
 #
