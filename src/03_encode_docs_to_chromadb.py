@@ -18,7 +18,7 @@ CHECKPOINT_PATH = Path("../checkpoint_early.pt")
 TOKENISED_DATA_PATH = Path("../train_tokenised.parquet")
 CHROMA_COLLECTION_NAME = "document"
 CHROMA_DB_DIR = "../chromadb"
-BATCH_SIZE = 512  # adjust depending on available memory
+BATCH_SIZE = 1024  # adjust depending on available memory
 
 #
 # INITIALISE CHROMADB
