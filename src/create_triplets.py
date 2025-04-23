@@ -22,44 +22,44 @@ OUTPUT_TEST = Path("../test.parquet")
 #
 
 def build_random_neg_sampled_triplets(df: pd.DataFrame) -> pd.DataFrame:
-    all_passages = []
+    # collect all passage texts once
+    all_passages = [
+        txt
+        for row in df.itertuples()
+        if isinstance(row.passages, dict)
+        for txt in row.passages["passage_text"]
+        if isinstance(txt, str) and txt.strip()
+    ]
 
-    for row in df.itertuples():
-        passages = row.passages
-        if not isinstance(passages, dict):
-            continue
-        all_passages.extend([txt for txt in passages["passage_text"] if isinstance(txt, str) and txt.strip()])
-
-    print(f"[Info] Total unique passages for global negative pool: {len(all_passages):,}")
+    print(f"[Info] Total unique passages for global sampling: {len(all_passages):,}")
 
     triplets = []
+    all_passages_clean = list(set(all_passages))
 
     for row in tqdm(df.itertuples(), total=len(df), desc="Building triplets"):
-        query_text = row.query
-        passages = row.passages
-
-        if not isinstance(passages, dict):
+        if not isinstance(row.passages, dict):
             continue
 
-        positive_passages = [txt for txt in passages["passage_text"] if isinstance(txt, str) and txt.strip()]
-        if not positive_passages:
+        query = row.query
+        pos_passages = [
+            txt for txt in row.passages["passage_text"]
+            if isinstance(txt, str) and txt.strip()
+        ]
+        if not pos_passages:
             continue
 
-        global_neg_pool = list(set(all_passages) - set(positive_passages))
+        # sample negatives randomly from the global pool
+        sampled_negatives = random.sample(all_passages_clean, len(pos_passages))
 
-        if len(global_neg_pool) < len(positive_passages):
-            continue
-
-        sampled_negatives = random.sample(global_neg_pool, len(positive_passages))
-
-        for pos, neg in zip(positive_passages, sampled_negatives):
+        for pos, neg in zip(pos_passages, sampled_negatives):
             triplets.append({
-                "query": query_text,
+                "query": query,
                 "positive_passage": pos,
                 "negative_passage": neg
             })
 
     return pd.DataFrame(triplets)
+
 #
 #
 # SPLIT DATA
