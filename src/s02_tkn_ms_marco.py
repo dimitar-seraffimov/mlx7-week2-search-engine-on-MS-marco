@@ -140,7 +140,7 @@ def build_and_save_vocab(corpus: list[str]):
 #
 #
 
-def tokenise_and_save_splits(vocab_to_int: dict, int_to_vocab: dict):
+def tokenise_and_save(vocab_to_int: dict, int_to_vocab: dict):
     print("Tokenising data splits...")
 
     splits = {
@@ -193,4 +193,4 @@ if __name__ == "__main__":
     # build vocab
     vocab_to_int, int_to_vocab = build_and_save_vocab(combined_corpus)
     # tokenise and save splits
-    tokenise_and_save_splits(vocab_to_int, int_to_vocab)
+    tokenise_and_save(vocab_to_int, int_to_vocab)

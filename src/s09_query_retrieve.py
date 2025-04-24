@@ -12,7 +12,7 @@ import chromadb
 #
 #
 
-VOCAB_PATH = Path("../tkn_vocab_to_int.parquet")
+VOCAB_PATH = Path("../combined_tokenised.parquet")
 EMBEDDING_MATRIX_PATH = Path("../embedding_matrix.npy")
 CHECKPOINT_PATH = Path("../checkpoint_hard.pt")
 CHROMA_DB_DIR = "../chromadb"
