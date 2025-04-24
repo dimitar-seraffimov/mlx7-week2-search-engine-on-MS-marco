@@ -99,6 +99,7 @@ def encode_passages():
     print("[Step 1] Loading trained HARD model...")
     embedding_matrix = torch.tensor(np.load(EMBEDDING_MATRIX_PATH), dtype=torch.float32)
     model = TwoTowerModel(embedding_matrix)
+    print(device)
     model.load_state_dict(torch.load(CHECKPOINT_PATH, map_location=device))
     model.to(device).eval()
 
@@ -108,15 +109,14 @@ def encode_passages():
     loader = DataLoader(dataset, batch_size=BATCH_SIZE, collate_fn=collate_fn, num_workers=NUM_WORKERS, pin_memory=True)
 
     print("[INFO] Clearing existing ChromaDB documents...")
-    print("[DEBUG] Sample docs before deletion:", collection.peek())
-    all_ids = collection.get()["ids"]
+    all_ids = collection.get(include=["ids"])["ids"]
     for i in tqdm(range(0, len(all_ids), 500), desc="Deleting"):
         collection.delete(ids=all_ids[i:i + 500])
     print("[DEBUG] Deletion complete. Remaining docs:", collection.count())
 
     print("[Step 3] Encoding and batching for ChromaDB...")
     buffer_ids, buffer_docs, buffer_embs = [], [], []
-    FLUSH_SIZE = 1024
+    FLUSH_SIZE = 4096
 
     with torch.no_grad():
         for batch in tqdm(loader, desc="Encoding passages"):
