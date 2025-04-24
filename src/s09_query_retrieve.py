@@ -64,7 +64,7 @@ def embed_query(query: str) -> np.ndarray:
         raise ValueError("Query tokens are too unknown or empty.")
     query_tensor = torch.tensor([ids], dtype=torch.long).to(device)
     with torch.no_grad():
-        embedding = model.encode(query_tensor).squeeze(0).numpy()
+        embedding = model.encode(query_tensor).squeeze(0).cpu().numpy()
     return embedding
 
 #
