@@ -1,4 +1,4 @@
-from chromadb import PersistentClient
+from chromadb import Client
 from chromadb.config import Settings
 
 # CONFIG
@@ -6,11 +6,9 @@ CHROMA_DB_DIR = "../chromadb"
 CHROMA_COLLECTION_NAME = "document"
 
 # Connect to ChromaDB (correct modern way)
-chroma_client = PersistentClient(
-    path=CHROMA_DB_DIR,
+chroma_client = Client(
     settings=Settings(
-        chroma_db_impl="duckdb+parquet",
-        persist_directory=CHROMA_DB_DIR,
+        persist_directory=str(CHROMA_DB_DIR),
         anonymized_telemetry=False,
     )
 )
