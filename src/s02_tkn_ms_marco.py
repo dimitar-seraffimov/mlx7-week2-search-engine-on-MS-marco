@@ -140,7 +140,7 @@ def build_and_save_vocab(corpus: list[str]):
 #
 #
 
-def tokenise_and_save(vocab_to_int: dict, int_to_vocab: dict):
+def tokenise_and_save_splits(vocab_to_int: dict, int_to_vocab: dict):
     print("Tokenising data splits...")
 
     splits = {
@@ -180,6 +180,33 @@ def tokenise_and_save(vocab_to_int: dict, int_to_vocab: dict):
 #
 #
 
+def tokenise_and_save_full_corpus(vocab_to_int: dict):
+    print("\nTokenising full passage corpus...")
+
+    df = pd.read_parquet(COMBINED_PARQUET)
+    if "passages" not in df.columns:
+        raise KeyError(f"'passages' column not found in {COMBINED_PARQUET}, found: {df.columns.tolist()}")
+    
+    df = df.rename(columns={"passages": "passage"})
+    df = df.drop_duplicates(subset=["passage"]).reset_index(drop=True)
+
+    df["id"] = df.index.map(lambda i: f"doc_{i}")
+
+    tqdm.pandas(desc="Tokenising passages")
+    df["pos_ids"] = df["passage"].progress_apply(lambda x: text_to_ids(x, vocab_to_int))
+    df["p_len"] = df["pos_ids"].str.len()
+
+    output_path = "../combined_tokenised.parquet"
+    df[["id", "passage", "pos_ids", "p_len"]].to_parquet(output_path)
+    print(f"Saved tokenised full corpus to {output_path}")
+
+
+#
+#
+#
+#
+#
+
 if __name__ == "__main__":
 
     # build vocab from already-created triplets
@@ -193,4 +220,6 @@ if __name__ == "__main__":
     # build vocab
     vocab_to_int, int_to_vocab = build_and_save_vocab(combined_corpus)
     # tokenise and save splits
-    tokenise_and_save(vocab_to_int, int_to_vocab)
+    tokenise_and_save_splits(vocab_to_int, int_to_vocab)
+    # tokenise and save full corpus
+    tokenise_and_save_full_corpus(vocab_to_int)
