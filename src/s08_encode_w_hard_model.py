@@ -9,9 +9,13 @@ from tower_model import TwoTowerModel
 import chromadb
 import wandb
 import shutil
+from sklearn.preprocessing import normalize
+
 
 #
+#
 # WANDB CHECKPOINT DOWNLOAD
+#
 #
 
 WANDB_USER = "mlx7-dimitar-projects"
@@ -77,7 +81,7 @@ class PassageDataset(Dataset):
         return {
             "ids": f"doc_{idx}",
             "text": self.df.iloc[idx]["positive_passage"],
-            "input_ids": torch.tensor(self.df.iloc[idx]["pos_ids"], dtype=torch.long)
+            "input_ids": torch.tensor(self.df.iloc[idx]["pos_ids"], dtype=torch.long)  # created once!
         }
 
 def collate_fn(batch):
@@ -85,7 +89,6 @@ def collate_fn(batch):
     texts = [b["text"] for b in batch]
     ids = [b["ids"] for b in batch]
     return {"input_ids": padded_inputs, "texts": texts, "ids": ids}
-
 
 #
 #
@@ -102,7 +105,7 @@ def encode_passages():
     print("[Step 2] Loading tokenised data...")
     df = pd.read_parquet(TOKENISED_DATA_PATH)
     dataset = PassageDataset(df)
-    loader = DataLoader(dataset, batch_size=BATCH_SIZE, collate_fn=collate_fn, num_workers=NUM_WORKERS)
+    loader = DataLoader(dataset, batch_size=BATCH_SIZE, collate_fn=collate_fn, num_workers=NUM_WORKERS, pin_memory=True)
 
     print("[INFO] Clearing existing ChromaDB documents...")
     print("[DEBUG] Sample docs before deletion:", collection.peek())
@@ -118,7 +121,10 @@ def encode_passages():
     with torch.no_grad():
         for batch in tqdm(loader, desc="Encoding passages"):
             inputs = batch["input_ids"].to(device)
-            embeddings = model.encode(inputs).cpu().numpy().tolist()
+            embeddings = model.encode(inputs).cpu().numpy()
+            embeddings = normalize(embeddings, norm='l2')  # normalize for cosine
+            embeddings = embeddings.tolist()
+
             buffer_ids.extend(batch["ids"])
             buffer_docs.extend(batch["texts"])
             buffer_embs.extend(embeddings)
@@ -127,9 +133,8 @@ def encode_passages():
                 collection.add(documents=buffer_docs, embeddings=buffer_embs, ids=buffer_ids)
                 buffer_ids, buffer_docs, buffer_embs = [], [], []
 
-        # Final flush
-        if buffer_ids:
-            collection.add(documents=buffer_docs, embeddings=buffer_embs, ids=buffer_ids)
+    if buffer_ids:
+        collection.add(documents=buffer_docs, embeddings=buffer_embs, ids=buffer_ids)
 
     print("[✓] Encoding complete. ChromaDB updated with HARD model vectors.")
 
