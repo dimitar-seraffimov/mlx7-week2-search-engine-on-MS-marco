@@ -21,6 +21,9 @@ LOCAL_CHECKPOINT = Path("../checkpoint_hard.pt")
 # DOWNLOAD CHECKPOINT
 print("[W&B] Logging in and fetching checkpoint...")
 wandb.login()
+
+wandb.init(project=WANDB_PROJECT, name="download-hard-model", job_type="download")
+
 artifact = wandb.use_artifact(f"{WANDB_USER}/{WANDB_PROJECT}/{ARTIFACT_NAME}", type="model")
 artifact_dir = artifact.download()
 
