@@ -113,7 +113,7 @@ def encode_passages():
 
     print("[Step 3] Encoding and batching for ChromaDB...")
     buffer_ids, buffer_docs, buffer_embs = [], [], []
-    FLUSH_SIZE = 5120
+    FLUSH_SIZE = 1024
 
     with torch.no_grad():
         for batch in tqdm(loader, desc="Encoding passages"):
