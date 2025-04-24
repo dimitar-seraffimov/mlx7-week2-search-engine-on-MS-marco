@@ -4,7 +4,7 @@ import pandas as pd
 from tqdm import tqdm
 from pathlib import Path
 from tower_model import TwoTowerModel
-from chromadb import Client
+from chromadb import PersistentClient
 from s02_tkn_ms_marco import text_to_ids
 import torch.nn as nn
 
@@ -47,7 +47,7 @@ print("[Step 3] Loading tokenised data...")
 df = pd.read_parquet(TOKENISED_DATA_PATH)
 
 print("[Step 4] Connecting to ChromaDB...")
-chroma_client = Client(path="../chromadb")
+chroma_client = PersistentClient(path="../chromadb")
 
 
 collection = chroma_client.get_or_create_collection(

@@ -1,4 +1,4 @@
-from chromadb import Client
+from chromadb import PersistentClient
 import pandas as pd
 import numpy as np
 import torch
@@ -22,7 +22,7 @@ BATCH_SIZE = 1024  # adjust depending on available memory
 # INITIALISE CHROMADB
 #
 
-chroma_client = Client(path="../chromadb")
+chroma_client = PersistentClient(path="../chromadb")
 
 #
 # ENCODE & ADD TO CHROMADB (BATCHED)
