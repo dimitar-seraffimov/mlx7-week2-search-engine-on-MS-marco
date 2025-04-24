@@ -96,9 +96,9 @@ def encode_passages():
             batch = df.iloc[i:i+BATCH_SIZE]
 
             passages = [torch.tensor(x, dtype=torch.long) for x in batch["pos_ids"]]
-            passages_padded = nn.utils.rnn.pad_sequence(passages, batch_first=True, padding_value=0)
+            passages_padded = nn.utils.rnn.pad_sequence(passages, batch_first=True, padding_value=0).to(device)
 
-            embeddings = model.encode(passages_padded).numpy().tolist()
+            embeddings = model.encode(passages_padded).cpu().numpy().tolist()
 
             doc_texts = list(batch["positive_passage"])
             doc_ids = [f"doc_{i + j}" for j in range(len(batch))]
