@@ -44,6 +44,12 @@ def collate_fn(batch):
         "neg": pad([item["neg"] for item in batch]),
     }
 
+# Load validation data at module level for import
+print("[Loading validation data for evaluation...]")
+df = pd.read_parquet(VAL_PARQUET_PATH)
+dataset = TripletDataset(df)
+val_loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False, collate_fn=collate_fn)
+
 #
 # EVALUATION FUNCTION
 #
@@ -72,10 +78,7 @@ def run_evaluation():
     embedding_matrix = torch.tensor(
         pd.read_parquet(EMBEDDING_MATRIX_PATH).values, dtype=torch.float32
     )
-    df = pd.read_parquet(VAL_PARQUET_PATH)
-    dataset = TripletDataset(df)
-    val_loader = DataLoader(dataset, batch_size=BATCH_SIZE, shuffle=False, collate_fn=collate_fn)
-
+    
     print("[Step 2] Loading model checkpoint...")
     model = TwoTowerModel(embedding_matrix).to(DEVICE)
     model.load_state_dict(torch.load(CHECKPOINT_PATH, map_location=DEVICE))
