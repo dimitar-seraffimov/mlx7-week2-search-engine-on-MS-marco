@@ -5,8 +5,8 @@ import pandas as pd
 from pathlib import Path
 from tqdm import tqdm
 from tower_model import TwoTowerModel
+from chromadb import Client
 from chromadb.config import Settings
-from chromadb import PersistentClient
 #
 # SETUP
 #
@@ -23,8 +23,7 @@ BATCH_SIZE = 1024  # adjust depending on available memory
 #
 
 
-chroma_client = PersistentClient(
-    path=str(CHROMA_DB_DIR),
+chroma_client = Client(
     settings=Settings(
         chroma_db_impl="duckdb+parquet",
         persist_directory=str(CHROMA_DB_DIR),
