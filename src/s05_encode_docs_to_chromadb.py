@@ -6,7 +6,7 @@ from pathlib import Path
 from tqdm import tqdm
 from tower_model import TwoTowerModel
 from chromadb.config import Settings
-from chromadb import Client
+from chromadb import PersistentClient
 #
 # SETUP
 #
@@ -23,10 +23,14 @@ BATCH_SIZE = 1024  # adjust depending on available memory
 #
 
 
-chroma_client = Client(Settings(
-    chroma_db_impl="duckdb+parquet",
-    persist_directory=str(CHROMA_DB_DIR),
-))
+chroma_client = PersistentClient(
+    path=str(CHROMA_DB_DIR),
+    settings=Settings(
+        chroma_db_impl="duckdb+parquet",
+        persist_directory=str(CHROMA_DB_DIR),
+        anonymized_telemetry=False,
+    )
+)
 
 #
 # ENCODE & ADD TO CHROMADB (BATCHED)
