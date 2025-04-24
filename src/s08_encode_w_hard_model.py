@@ -80,10 +80,11 @@ def encode_passages():
     all_ids = collection.get()["ids"]
     batch_size = 500  # safely below SQLite's limit
 
-    # Delete in batches
-    for i in range(0, len(all_ids), batch_size):
+    print(f"[INFO] Deleting {len(all_ids):,} documents in batches of {batch_size}...")
+    for i in tqdm(range(0, len(all_ids), batch_size), desc="Deleting"):
         batch_ids = all_ids[i:i + batch_size]
         collection.delete(ids=batch_ids)
+
 
     print("[DEBUG] Deletion complete. Remaining docs:", collection.count())
 
