@@ -39,6 +39,7 @@ collection = chroma_client.get_or_create_collection(
     name=CHROMA_COLLECTION_NAME,
     metadata={"distance_metric": "cosine"}
 )
+print("[DEBUG] Peek:", collection.peek())
 
 #
 #
@@ -51,19 +52,24 @@ model = TwoTowerModel(embedding_matrix)
 model.load_state_dict(torch.load(CHECKPOINT_PATH, map_location=device))
 model.to(device).eval()
 
-# === Query helper ===
+#
+#
+# QUERY HELPER
+#
+#
+
 def embed_query(query: str) -> np.ndarray:
     ids = text_to_ids(query, vocab_to_int)
     if not ids:
         raise ValueError("Query tokens are too unknown or empty.")
-    query_tensor = torch.tensor([ids], dtype=torch.long)
+    query_tensor = torch.tensor([ids], dtype=torch.long).to(device)
     with torch.no_grad():
         embedding = model.encode(query_tensor).squeeze(0).numpy()
     return embedding
 
 #
 #
-# QUERY HELPER
+# QUERY CHROMADB
 #
 #
 
