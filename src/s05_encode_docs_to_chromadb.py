@@ -7,7 +7,7 @@ from tqdm import tqdm
 from tower_model import TwoTowerModel
 import chromadb
 from torch.utils.data import DataLoader
-from chromadb import PersistentClient, Settings
+from chromadb import Settings
 
 #
 # SETUP
@@ -25,14 +25,10 @@ BATCH_SIZE = 1024  # adjust depending on available memory
 #
 
 
-chroma_client = chromadb.PersistentClient(
-    path=CHROMA_DB_DIR,
-    settings=Settings(
-        chroma_db_impl="duckdb+parquet",
-        persist_directory=str(CHROMA_DB_DIR),
-        anonymized_telemetry=False,
-    )
-)
+chroma_client = chromadb.Client(Settings(
+    chroma_db_impl="duckdb+parquet",
+    persist_directory=CHROMA_DB_DIR,
+))
 
 #
 # ENCODE & ADD TO CHROMADB (BATCHED)
@@ -51,9 +47,7 @@ def encode_passages():
     print("[Step 3] Creating Chroma collection...")
     collection = chroma_client.get_or_create_collection(
         name=CHROMA_COLLECTION_NAME,
-        metadata={"hnsw:space": "cosine"},
-        embedding_function=None,
-        include=["documents", "embeddings", "metadatas"]
+        metadata={"distance_metric": "cosine"}
     )
 
     print("[Step 4] Encoding and adding to ChromaDB in batches...")
