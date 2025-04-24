@@ -60,6 +60,11 @@ collection = chroma_client.get_or_create_collection(
     name=CHROMA_COLLECTION_NAME,
     metadata={"distance_metric": "cosine"},
 )
+
+print("[DEBUG] Collection doc count:", collection.count())
+peeked = collection.peek()
+print("[DEBUG] Sample docs:", peeked["documents"][:3])
+
 #
 #
 # HARD NEGATIVE MINING
