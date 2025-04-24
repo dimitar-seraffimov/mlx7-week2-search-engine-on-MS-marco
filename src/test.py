@@ -4,6 +4,7 @@ from tqdm import tqdm
 
 CHUNKS = 16  # Adjust based on memory and performance
 COMBINED_PARQUET = Path("../combined.parquet")
+VOCAB_PATH = Path("../tkn_vocab_to_int.parquet")
 OUTPUT_DIR = Path("../tokenised_chunks")
 OUTPUT_DIR.mkdir(exist_ok=True)
 
@@ -39,3 +40,10 @@ def tokenise_and_save_full_corpus_chunked(vocab_to_int):
     print("\nAll chunks processed. To merge them into final file:")
     print("pd.concat([pd.read_parquet(f) for f in Path('../tokenised_chunks').glob('combined_tokenised_part_*.parquet')])\n" 
           ".to_parquet('../combined_tokenised.parquet', index=False)")
+
+if __name__ == "__main__":
+    # Load vocab
+    vocab_to_int = pd.read_parquet(VOCAB_PATH).iloc[0].to_dict()
+
+    # Run chunked tokenisation
+    tokenise_and_save_full_corpus_chunked(vocab_to_int)
