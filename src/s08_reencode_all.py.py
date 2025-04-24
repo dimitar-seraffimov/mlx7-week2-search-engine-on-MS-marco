@@ -43,7 +43,7 @@ print(f"[✓] Downloaded and saved checkpoint to {LOCAL_CHECKPOINT}")
 
 EMBEDDING_MATRIX_PATH = Path("../embedding_matrix.npy")
 CHECKPOINT_PATH = Path("../checkpoint_hard.pt")
-TOKENISED_DATA_PATH = Path("../train_tokenised_hard.parquet")
+TOKENISED_DATA_PATH = Path("../combined_tokenised.parquet")
 CHROMA_COLLECTION_NAME = "document"
 CHROMA_DB_DIR = "../chromadb"
 BATCH_SIZE = 1024
@@ -80,9 +80,9 @@ class PassageDataset(Dataset):
 
     def __getitem__(self, idx):
         return {
-            "ids": f"doc_{idx}",
-            "text": self.df.iloc[idx]["positive_passage"],
-            "input_ids": torch.tensor(self.df.iloc[idx]["pos_ids"], dtype=torch.long)  # created once!
+            "ids": self.df.iloc[idx]["id"],
+            "text": self.df.iloc[idx]["passage"],
+            "input_ids": torch.tensor(self.df.iloc[idx]["pos_ids"], dtype=torch.long)
         }
 
 def collate_fn(batch):
