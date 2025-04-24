@@ -25,7 +25,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 #
 #
 
-vocab_to_int = pd.read_parquet(VOCAB_PATH)
+vocab_to_int = pd.read_parquet(VOCAB_PATH).iloc[0].to_dict()
 
 #
 #
@@ -60,7 +60,7 @@ model.to(device).eval()
 
 def embed_query(query: str) -> np.ndarray:
     ids = text_to_ids(query, vocab_to_int)
-    if not ids:
+    if not isinstance(ids, list) or len(ids) == 0:
         raise ValueError("Query tokens are too unknown or empty.")
     query_tensor = torch.tensor([ids], dtype=torch.long).to(device)
     with torch.no_grad():
