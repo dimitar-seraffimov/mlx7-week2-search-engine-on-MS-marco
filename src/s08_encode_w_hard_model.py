@@ -58,8 +58,9 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 print("[Step 4] Connecting to ChromaDB...")
 chroma_client = chromadb.PersistentClient(path=CHROMA_DB_DIR)
+chroma_client.delete_collection(CHROMA_COLLECTION_NAME)
 collection = chroma_client.get_or_create_collection(
-    name=CHROMA_COLLECTION_NAME, 
+    name=CHROMA_COLLECTION_NAME,
     metadata={"distance_metric": "cosine"}
 )
 
@@ -109,7 +110,7 @@ def encode_passages():
     loader = DataLoader(dataset, batch_size=BATCH_SIZE, collate_fn=collate_fn, num_workers=NUM_WORKERS, pin_memory=True)
 
     print("[INFO] Clearing existing ChromaDB documents...")
-    all_ids = collection.get(include=["ids"])["ids"]
+    all_ids = collection.get()["ids"]
     for i in tqdm(range(0, len(all_ids), 500), desc="Deleting"):
         collection.delete(ids=all_ids[i:i + 500])
     print("[DEBUG] Deletion complete. Remaining docs:", collection.count())
