@@ -27,7 +27,6 @@ chroma_client = Client(
     settings=Settings(
         persist_directory=str(CHROMA_DB_DIR),
         anonymized_telemetry=False,
-        embedding_function=None,
     )
 )
 
