@@ -34,7 +34,7 @@ vocab_to_int = pd.read_parquet(VOCAB_PATH)
 #
 
 print("[Step 4] Connecting to ChromaDB...")
-chroma_client = PersistentClient(path=CHROMA_DB_DIR)
+chroma_client = PersistentClient(CHROMA_DB_DIR)
 collection = chroma_client.get_or_create_collection(
     name=CHROMA_COLLECTION_NAME,
     metadata={"distance_metric": "cosine"}
