@@ -56,7 +56,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 print("[Step 4] Connecting to ChromaDB...")
 chroma_client = chromadb.PersistentClient(path=CHROMA_DB_DIR)
-collection = chroma_client.get_collection(
+collection = chroma_client.get_or_create_collection(
     name=CHROMA_COLLECTION_NAME, 
     metadata={"distance_metric": "cosine"}
 )
