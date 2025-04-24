@@ -159,7 +159,16 @@ def tokenise_and_save_splits(vocab_to_int: dict, int_to_vocab: dict):
         df["n_len"] = df["neg_ids"].str.len()
 
         print(f"{name}: avg q {df['q_len'].mean():.1f}, p {df['p_len'].mean():.1f}, n {df['n_len'].mean():.1f}")
-        # Save to root directory
+
+        df = df[[
+            "query", "positive_passage", "negative_passage",
+            "query_ids", "pos_ids", "neg_ids", "q_len", "p_len", "n_len"
+        ]]
+
+        print(f"\n[{name.upper()}] Sample rows before saving:")
+        print(df.head(2).T)
+        
+        # save to root directory
         df.to_parquet(f"../{name}_tokenised.parquet")
 
         print(f"\nTokenised samples from {name.upper()}:")
