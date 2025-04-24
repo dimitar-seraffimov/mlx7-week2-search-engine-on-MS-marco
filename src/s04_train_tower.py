@@ -14,7 +14,7 @@ from tower_model import TwoTowerModel
 #
 #
 
-EPOCHS = 3
+EPOCHS = 2 # no need for more at this stage -> really low initial loss, running it more doesnt add any value
 BATCH_SIZE = 128
 EMBED_DIM = 300
 LR = 1e-3
