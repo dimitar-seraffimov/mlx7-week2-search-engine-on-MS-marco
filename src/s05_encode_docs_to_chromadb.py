@@ -49,7 +49,6 @@ def encode_passages():
         name=CHROMA_COLLECTION_NAME,
         metadata={"distance_metric": "cosine"},
         embedding_function=None,
-        include=["documents", "embeddings", "metadatas"]
     )
 
     print("[Step 4] Encoding and adding to ChromaDB in batches...")
