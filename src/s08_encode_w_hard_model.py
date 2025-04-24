@@ -6,6 +6,28 @@ from pathlib import Path
 from tqdm import tqdm
 from tower_model import TwoTowerModel
 import chromadb
+import wandb
+import shutil
+
+#
+# WANDB CHECKPOINT DOWNLOAD
+#
+
+WANDB_USER = "dimitar-seraffimov"
+WANDB_PROJECT = "mlx7-week2-search-engine"
+ARTIFACT_NAME = "model-epoch-10:latest"
+LOCAL_CHECKPOINT = Path("../checkpoint_hard.pt")
+
+# DOWNLOAD CHECKPOINT
+print("[W&B] Logging in and fetching checkpoint...")
+wandb.login()
+artifact = wandb.use_artifact(f"{WANDB_USER}/{WANDB_PROJECT}/{ARTIFACT_NAME}", type="model")
+artifact_dir = artifact.download()
+
+# RENAME FILE TO checkpoint_hard.pt
+downloaded = list(Path(artifact_dir).glob("*.pt"))[0]
+shutil.copy(downloaded, LOCAL_CHECKPOINT)
+print(f"[✓] Downloaded and saved checkpoint to {LOCAL_CHECKPOINT}")
 
 #
 #
