@@ -5,10 +5,8 @@ import pandas as pd
 from pathlib import Path
 from tqdm import tqdm
 from tower_model import TwoTowerModel
-import chromadb
-from torch.utils.data import DataLoader
-from chromadb import Settings
-
+from chromadb.config import Settings
+from chromadb import Client
 #
 # SETUP
 #
@@ -25,9 +23,9 @@ BATCH_SIZE = 1024  # adjust depending on available memory
 #
 
 
-chroma_client = chromadb.Client(Settings(
+chroma_client = Client(Settings(
     chroma_db_impl="duckdb+parquet",
-    persist_directory=CHROMA_DB_DIR,
+    persist_directory=str(CHROMA_DB_DIR),
 ))
 
 #
