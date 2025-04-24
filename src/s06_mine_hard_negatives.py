@@ -4,7 +4,8 @@ import pandas as pd
 from tqdm import tqdm
 from pathlib import Path
 from tower_model import TwoTowerModel
-import chromadb
+from chromadb import Client
+from chromadb.config import Settings
 from s02_tkn_ms_marco import text_to_ids
 import torch.nn as nn
 
@@ -47,9 +48,18 @@ print("[Step 3] Loading tokenised data...")
 df = pd.read_parquet(TOKENISED_DATA_PATH)
 
 print("[Step 4] Connecting to ChromaDB...")
-chroma_client = chromadb.PersistentClient(path="../chromadb")
-collection = chroma_client.get_collection(CHROMA_COLLECTION_NAME)
+chroma_client = Client(
+    settings=Settings(
+        persist_directory=str("../chromadb"),
+        anonymized_telemetry=False,
+    )
+)
 
+
+collection = chroma_client.get_or_create_collection(
+    name=CHROMA_COLLECTION_NAME,
+    metadata={"distance_metric": "cosine"},
+)
 #
 #
 # HARD NEGATIVE MINING
