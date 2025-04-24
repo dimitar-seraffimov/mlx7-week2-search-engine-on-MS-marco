@@ -26,7 +26,7 @@ class TwoTowerModel(nn.Module):
     def masked_mean_pool(self, x, mask):
         x = x * mask.unsqueeze(-1)             # zero out padded values
         summed = x.sum(dim=1)                  # sum across sequence
-        lengths = mask.sum(dim=1).clamp(min=1) # avoid divide by zero
+        lengths = mask.sum(dim=1).clamp(min=1).unsqueeze(1)  # (batch, 1)
         return summed / lengths                # mean without padding
 
     def encode(self, x, tower: str = "query"):
