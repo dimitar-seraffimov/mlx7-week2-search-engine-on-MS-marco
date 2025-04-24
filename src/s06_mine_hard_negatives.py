@@ -85,9 +85,6 @@ with torch.no_grad():
           gold_text = row.positive_passage
           retrieved_docs = results["documents"][j]
           retrieved_ids = results["ids"][j]
-          print(f"\n[INFO] Gold: {gold_text[:60]}...")
-          print(f"[INFO] Retrieved: {[doc[:60] if doc else 'None' for doc in retrieved_docs]}")
-
 
           # find one valid hard negative
           hard_negative_text = next(
