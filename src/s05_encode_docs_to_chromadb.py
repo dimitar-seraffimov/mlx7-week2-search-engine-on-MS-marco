@@ -43,7 +43,7 @@ def encode_passages():
     print("[Step 3] Creating Chroma collection...")
     collection = chroma_client.get_or_create_collection(
         name=CHROMA_COLLECTION_NAME,
-        metadata={"hnsw:space": "cosine"}
+        metadata={"distance_metric": "cosine"}
     )
 
     print("[Step 4] Encoding and adding to ChromaDB in batches...")
@@ -61,11 +61,7 @@ def encode_passages():
             doc_ids = [f"doc_{i+j}" for j in range(len(batch))]
 
             # batch add to ChromaDB
-            collection.add(
-                documents=doc_texts,
-                embeddings=embeddings,
-                ids=doc_ids
-            )
+            collection.add(embeddings=embeddings, ids=doc_ids)
 
     print("[✓] Encoding complete. Collection saved.")
 

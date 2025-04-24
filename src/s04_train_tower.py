@@ -17,6 +17,9 @@ from tower_model import TwoTowerModel
 EPOCHS = 3
 BATCH_SIZE = 128
 EMBED_DIM = 300
+LR = 1e-3
+MARGIN = 0.2
+CLIP = 1.0
 CHECKPOINT_PATH = Path("../checkpoint_early.pt")
 EMBEDDING_MATRIX_PATH = Path("../embedding_matrix.npy")
 TRIPLETS_PATH = Path("../train_tokenised.parquet")  # using random negatives
@@ -53,19 +56,13 @@ def collate_fn(batch):
 
 #
 #
-# MODEL
-#
-#
-
-# Model definition moved at tower_model.py
-
-#
+# MODEL called from tower_model.py
 #
 # TRAINING
 #
 #
 
-def main():
+def train():
     # load embedding matrix
     embedding_matrix = torch.tensor(np.load(EMBEDDING_MATRIX_PATH), dtype=torch.float32)
     
@@ -76,10 +73,11 @@ def main():
 
     print("[Step 2] Building model...")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    model = TwoTowerModel(embedding_matrix).to(device)
 
+    model = TwoTowerModel(embedding_matrix).to(device)
     criterion = nn.TripletMarginLoss(margin=0.2, p=2)
     optimizer = optim.Adam(model.parameters(), lr=1e-3)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=2, gamma=0.8)
 
     print("[Step 3] Starting training...")
     for epoch in range(EPOCHS):
@@ -91,11 +89,12 @@ def main():
             p = batch["pos"].to(device)
             n = batch["neg"].to(device)
 
+            optimizer.zero_grad()
             q_enc, p_enc, n_enc = model(q, p, n)
 
             loss = criterion(q_enc, p_enc, n_enc)
-            optimizer.zero_grad()
             loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), CLIP)
             optimizer.step()
 
             epoch_loss += loss.item()
@@ -108,4 +107,4 @@ def main():
     print("[DONE]")
 
 if __name__ == "__main__":
-    main()
+    train()

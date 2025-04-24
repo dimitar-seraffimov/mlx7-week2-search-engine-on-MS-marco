@@ -44,7 +44,7 @@ def preprocess(text: str) -> list[str]:
 #
 #
 
-def text_to_ids(text: str, vocab_to_int: dict[str, int], max_unk_ratio: float = 0.2) -> list[int]:
+def text_to_ids(text: str, vocab_to_int: dict[str, int], max_unk_ratio: float = 0.15) -> list[int]:
     unk_id = vocab_to_int["<UNK>"]
     words = preprocess(text)
     ids = [vocab_to_int.get(word, unk_id) for word in words]

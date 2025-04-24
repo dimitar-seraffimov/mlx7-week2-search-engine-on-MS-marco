@@ -68,6 +68,9 @@ def encode_passages():
     print("[Step 2] Loading tokenised data...")
     df = pd.read_parquet(TOKENISED_DATA_PATH)
 
+    print("[INFO] Clearing existing ChromaDB documents...")
+    collection.delete(where={})  
+
     print("[Step 3] Encoding and adding to ChromaDB in batches...")
     with torch.no_grad():
         for i in tqdm(range(0, len(df), BATCH_SIZE), desc="Encoding passages"):

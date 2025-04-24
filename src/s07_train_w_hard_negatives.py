@@ -20,6 +20,9 @@ from evaluate import evaluate, val_loader
 EPOCHS = 10
 BATCH_SIZE = 128
 EMBED_DIM = 300
+LEARNING_RATE = 1e-3
+MARGIN = 0.2
+GRAD_CLIP = 1.0
 
 CHECKPOINT_PATH = Path("../checkpoint_hard.pt")
 EMBEDDING_MATRIX_PATH = Path("../embedding_matrix.npy")
@@ -51,8 +54,7 @@ class TripletDataset(Dataset):
         }
 
 def collate_fn(batch):
-    def pad(seq_list):
-        return nn.utils.rnn.pad_sequence(seq_list, batch_first=True, padding_value=0)
+    def pad(seqs): return nn.utils.rnn.pad_sequence(seqs, batch_first=True, padding_value=0)
     return {
         "query": pad([item["query"] for item in batch]),
         "pos": pad([item["pos"] for item in batch]),
@@ -72,8 +74,8 @@ def main():
         config={
             "epochs": EPOCHS,
             "batch_size": BATCH_SIZE,
-            "lr": 1e-3,
-            "margin": 0.2,
+            "lr": LEARNING_RATE,
+            "margin": MARGIN,
             "triplets_path": str(TRIPLETS_PATH),
             "embedding_dim": EMBED_DIM
         }
@@ -92,8 +94,9 @@ def main():
     wandb.watch(model, log="all") 
     print('Model parameters:', sum(p.numel() for p in model.parameters()))
     
-    criterion = nn.TripletMarginLoss(margin=0.2, p=2)
-    optimizer = optim.Adam(model.parameters(), lr=1e-3)
+    criterion = nn.TripletMarginLoss(margin=MARGIN, p=2)
+    optimizer = optim.Adam(model.parameters(), lr=LEARNING_RATE)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=3, gamma=0.8)
 
     print("[Step 4] Training with HARD negatives...")
     for epoch in range(EPOCHS):
@@ -101,6 +104,7 @@ def main():
         epoch_loss = 0
         
         progress_bar = tqdm(loader, desc=f"Epoch {epoch+1}/{EPOCHS}", leave=False)
+        
         for i, batch in enumerate(progress_bar):
             q = batch["query"].to(device)
             p = batch["pos"].to(device)
@@ -111,6 +115,7 @@ def main():
 
             loss = criterion(q_enc, p_enc, n_enc)
             loss.backward()
+            nn.utils.clip_grad_norm_(model.parameters(), GRAD_CLIP)
             optimizer.step()
 
             # log after each batch
@@ -119,20 +124,23 @@ def main():
             epoch_loss += loss.item()
             progress_bar.set_postfix({"loss": loss.item()})
 
+        scheduler.step()
+
         avg_loss = epoch_loss / len(loader)
         print(f"Epoch {epoch+1} Loss: {avg_loss:.4f}")
-        val_loss = evaluate(model, val_loader, criterion)
-        print(f"[Val] Epoch {epoch+1} Validation Loss: {val_loss:.4f}")
-        wandb.log({"val_loss": val_loss, "epoch": epoch + 1})
+
+        if val_loader:
+            val_loss = evaluate(model, val_loader, criterion)
+            print(f"[Val] Epoch {epoch+1} Validation Loss: {val_loss:.4f}")
+            wandb.log({"val_loss": val_loss, "epoch": epoch + 1})
                 
         # save checkpoint for each epoch
         checkpoint_name = f"checkpoint_hard_{timestamp}_epoch_{epoch+1}.pt"
         checkpoint_path = Path(f"../checkpoints/{checkpoint_name}")
         checkpoint_path.parent.mkdir(exist_ok=True)
-        
         torch.save(model.state_dict(), checkpoint_path)
         
-        # log model as artifact
+        # log model to wandb
         artifact = wandb.Artifact(f'model-epoch-{epoch+1}', type='model')
         artifact.add_file(str(checkpoint_path))
         wandb.log_artifact(artifact)
