@@ -4,8 +4,7 @@ import pandas as pd
 from tower_model import TwoTowerModel
 from pathlib import Path
 from s02_tkn_ms_marco import text_to_ids
-import chromadb
-from chromadb.config import Settings
+from chromadb import PersistentClient
 
 #
 #
@@ -18,6 +17,7 @@ EMBEDDING_MATRIX_PATH = Path("../embedding_matrix.npy")
 CHECKPOINT_PATH = Path("../checkpoint_hard.pt")
 CHROMA_DB_DIR = Path("../chromadb")
 CHROMA_COLLECTION_NAME = "document"
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 #
 #
@@ -34,8 +34,11 @@ vocab_to_int = pd.read_parquet(VOCAB_PATH)
 #
 
 print("[Step 4] Connecting to ChromaDB...")
-chroma_client = chromadb.PersistentClient(path=CHROMA_DB_DIR)
-collection = chroma_client.get_collection(CHROMA_COLLECTION_NAME)
+chroma_client = PersistentClient(path=CHROMA_DB_DIR)
+collection = chroma_client.get_or_create_collection(
+    name=CHROMA_COLLECTION_NAME,
+    metadata={"distance_metric": "cosine"}
+)
 
 #
 #
@@ -45,8 +48,8 @@ collection = chroma_client.get_collection(CHROMA_COLLECTION_NAME)
 
 embedding_matrix = torch.tensor(np.load(EMBEDDING_MATRIX_PATH), dtype=torch.float32)
 model = TwoTowerModel(embedding_matrix)
-model.load_state_dict(torch.load(CHECKPOINT_PATH, map_location="cpu"))
-model.eval()
+model.load_state_dict(torch.load(CHECKPOINT_PATH, map_location=device))
+model.to(device).eval()
 
 # === Query helper ===
 def embed_query(query: str) -> np.ndarray:
