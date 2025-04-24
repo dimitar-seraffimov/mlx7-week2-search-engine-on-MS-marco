@@ -72,7 +72,8 @@ def encode_passages():
     df = pd.read_parquet(TOKENISED_DATA_PATH)
     
     print("[INFO] Clearing existing ChromaDB documents...")
-    collection.delete(where={"id": {"$ne": None}})
+    all_ids = collection.get()["ids"]
+    collection.delete(ids=all_ids)
 
     print("[Step 3] Encoding and adding to ChromaDB in batches...")
     with torch.no_grad():
