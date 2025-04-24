@@ -4,7 +4,7 @@ import pandas as pd
 from tower_model import TwoTowerModel
 from pathlib import Path
 from s02_tkn_ms_marco import text_to_ids
-from chromadb import PersistentClient
+import chromadb
 
 #
 #
@@ -15,7 +15,7 @@ from chromadb import PersistentClient
 VOCAB_PATH = Path("../tkn_vocab_to_int.parquet")
 EMBEDDING_MATRIX_PATH = Path("../embedding_matrix.npy")
 CHECKPOINT_PATH = Path("../checkpoint_hard.pt")
-CHROMA_DB_DIR = Path("../chromadb")
+CHROMA_DB_DIR = "../chromadb"
 CHROMA_COLLECTION_NAME = "document"
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -34,7 +34,7 @@ vocab_to_int = pd.read_parquet(VOCAB_PATH)
 #
 
 print("[Step 4] Connecting to ChromaDB...")
-chroma_client = PersistentClient(CHROMA_DB_DIR)
+chroma_client = chromadb.PersistentClient(path=CHROMA_DB_DIR)
 collection = chroma_client.get_or_create_collection(
     name=CHROMA_COLLECTION_NAME,
     metadata={"distance_metric": "cosine"}
