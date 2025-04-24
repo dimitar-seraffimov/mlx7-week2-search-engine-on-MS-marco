@@ -65,7 +65,9 @@ def encode_passages():
     print("[Step 1] Loading trained HARD model...")
     embedding_matrix = torch.tensor(np.load(EMBEDDING_MATRIX_PATH), dtype=torch.float32)
     model = TwoTowerModel(embedding_matrix)
-    model.load_state_dict(torch.load(CHECKPOINT_PATH, map_location="cpu"))
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model.load_state_dict(torch.load(CHECKPOINT_PATH, map_location=device))
+    model.to(device)
     model.eval()
 
     print("[Step 2] Loading tokenised data...")
@@ -101,11 +103,7 @@ def encode_passages():
             doc_texts = list(batch["positive_passage"])
             doc_ids = [f"doc_{i + j}" for j in range(len(batch))]
 
-            collection.add(
-                documents=doc_texts,
-                embeddings=embeddings,
-                ids=doc_ids
-            )
+            collection.add(documents=doc_texts, embeddings=embeddings, ids=doc_ids)
 
     print("[✓] Encoding complete. ChromaDB updated with HARD model vectors.")
 
