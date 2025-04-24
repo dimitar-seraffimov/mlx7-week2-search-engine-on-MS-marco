@@ -1,5 +1,4 @@
-from chromadb import PersistentClient
-from chromadb.config import Settings
+from chromadb import Client
 import pandas as pd
 import numpy as np
 import torch
@@ -23,14 +22,7 @@ BATCH_SIZE = 1024  # adjust depending on available memory
 # INITIALISE CHROMADB
 #
 
-chroma_client = PersistentClient(
-    path=CHROMA_DB_DIR,
-    settings=Settings(
-        chroma_db_impl="duckdb+parquet",
-        persist_directory=CHROMA_DB_DIR,
-        anonymized_telemetry=False,
-    )
-)
+chroma_client = Client(path="../chromadb")
 
 #
 # ENCODE & ADD TO CHROMADB (BATCHED)
@@ -50,7 +42,6 @@ def encode_passages():
     collection = chroma_client.get_or_create_collection(
         name=CHROMA_COLLECTION_NAME,
         metadata={"distance_metric": "cosine"},
-        embedding_function=None,
     )
 
     print("[Step 4] Encoding and adding to ChromaDB in batches...")

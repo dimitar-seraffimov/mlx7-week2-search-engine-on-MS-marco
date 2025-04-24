@@ -4,8 +4,7 @@ import pandas as pd
 from tqdm import tqdm
 from pathlib import Path
 from tower_model import TwoTowerModel
-from chromadb import PersistentClient
-from chromadb.config import Settings
+from chromadb import Client
 from s02_tkn_ms_marco import text_to_ids
 import torch.nn as nn
 
@@ -21,7 +20,6 @@ TOKENISED_DATA_PATH = Path("../train_tokenised.parquet")
 OUTPUT_PATH = Path("../train_tokenised_hard.parquet")
 CHROMA_COLLECTION_NAME = "document"
 BATCH_SIZE = 1024
-CHROMA_DB_DIR = "../chromadb"
 
 #
 #
@@ -49,14 +47,7 @@ print("[Step 3] Loading tokenised data...")
 df = pd.read_parquet(TOKENISED_DATA_PATH)
 
 print("[Step 4] Connecting to ChromaDB...")
-chroma_client = PersistentClient(
-    path=CHROMA_DB_DIR,
-    settings=Settings(
-        chroma_db_impl="duckdb+parquet",
-        persist_directory=CHROMA_DB_DIR,
-        anonymized_telemetry=False,
-    )
-)
+chroma_client = Client(path="../chromadb")
 
 
 collection = chroma_client.get_or_create_collection(
