@@ -79,9 +79,7 @@ with torch.no_grad():
 
           # find one valid hard negative
           hard_negative_text = next(
-              (doc for doc in retrieved_docs if doc.strip() != gold_text.strip()),
-              None
-          )
+            (doc for doc in retrieved_docs if doc and doc.strip() != gold_text.strip()), None)
 
           if not hard_negative_text:
               continue  # skip if none found
