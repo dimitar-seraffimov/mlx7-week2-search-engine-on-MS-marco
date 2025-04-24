@@ -7,30 +7,6 @@ from tower_model import TwoTowerModel
 import chromadb
 from s02_tkn_ms_marco import text_to_ids
 import torch.nn as nn
-import wandb
-import shutil # rename downlaoded checkpoint to checkpoint_hard.pt
-
-#
-#
-# WANDB
-#
-#
-
-WANDB_USER = "dimitar-seraffimov"
-WANDB_PROJECT = "mlx7-week2-search-engine"
-ARTIFACT_NAME = "model-epoch-10:latest"
-
-wandb.login()  # will prompt for key once
-
-print("[Step] Downloading model checkpoint from W&B...")
-artifact = wandb.use_artifact(f"{WANDB_USER}/{WANDB_PROJECT}/{ARTIFACT_NAME}", type="model")
-artifact_dir = artifact.download()
-checkpoint_path = Path(artifact_dir) / "checkpoint_hard_2025_04_23__18_30_59_epoch_10.pt"
-
-downloaded = list(Path(artifact_dir).glob("*.pt"))[0]
-checkpoint_path = Path("../checkpoint_hard_latest.pt")  # fixed path
-shutil.copy(downloaded, checkpoint_path)
-print(f"[✓] Checkpoint saved locally to: {checkpoint_path}")
 
 #
 #

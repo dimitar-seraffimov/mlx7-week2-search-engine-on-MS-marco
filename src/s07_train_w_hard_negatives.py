@@ -10,6 +10,28 @@ import datetime
 from tower_model import TwoTowerModel
 import wandb
 from evaluate import evaluate, val_loader
+import shutil
+
+#
+# WANDB CHECKPOINT DOWNLOAD
+#
+
+WANDB_USER = "dimitar-seraffimov"
+WANDB_PROJECT = "mlx7-week2-search-engine"
+ARTIFACT_NAME = "model-epoch-10:latest"
+LOCAL_CHECKPOINT = Path("../checkpoint_hard.pt")
+
+# DOWNLOAD CHECKPOINT
+print("[W&B] Logging in and fetching checkpoint...")
+wandb.login()
+artifact = wandb.use_artifact(f"{WANDB_USER}/{WANDB_PROJECT}/{ARTIFACT_NAME}", type="model")
+artifact_dir = artifact.download()
+
+# FIND .PT FILE IN ARTIFACT AND RENAME IT TO checkpoint_hard.pt
+downloaded = list(Path(artifact_dir).glob("*.pt"))[0]
+shutil.copy(downloaded, LOCAL_CHECKPOINT)
+print(f"[✓] Downloaded and saved checkpoint to {LOCAL_CHECKPOINT}")
+
 
 #
 #
@@ -21,7 +43,7 @@ EPOCHS = 10
 BATCH_SIZE = 128
 EMBED_DIM = 300
 
-CHECKPOINT_PATH = Path("../checkpoint_hard_latest.pt")
+CHECKPOINT_PATH = Path("../checkpoint_hard.pt")
 EMBEDDING_MATRIX_PATH = Path("../embedding_matrix.npy")
 TRIPLETS_PATH = Path("../train_tokenised_hard.parquet")
 
