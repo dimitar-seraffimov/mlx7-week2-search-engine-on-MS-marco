@@ -72,8 +72,20 @@ def encode_passages():
     df = pd.read_parquet(TOKENISED_DATA_PATH)
     
     print("[INFO] Clearing existing ChromaDB documents...")
+
+    # Peek first few to confirm what's inside
+    print("[DEBUG] Sample docs before deletion:", collection.peek())
+
+    # Get all doc IDs
     all_ids = collection.get()["ids"]
-    collection.delete(ids=all_ids)
+    batch_size = 500  # safely below SQLite's limit
+
+    # Delete in batches
+    for i in range(0, len(all_ids), batch_size):
+        batch_ids = all_ids[i:i + batch_size]
+        collection.delete(ids=batch_ids)
+
+    print("[DEBUG] Deletion complete. Remaining docs:", collection.count())
 
     print("[Step 3] Encoding and adding to ChromaDB in batches...")
     with torch.no_grad():
