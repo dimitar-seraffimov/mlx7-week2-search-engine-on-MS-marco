@@ -13,7 +13,7 @@ import shutil
 # WANDB CHECKPOINT DOWNLOAD
 #
 
-WANDB_USER = "dimitar-seraffimov"
+WANDB_USER = "mlx7-dimitar-projects"
 WANDB_PROJECT = "mlx7-week2-search-engine"
 ARTIFACT_NAME = "model-epoch-10:latest"
 LOCAL_CHECKPOINT = Path("../checkpoint_hard.pt")
