@@ -28,15 +28,9 @@ BATCH_SIZE = 1024
 #
 #
 
-chroma_client = PersistentClient(path=CHROMA_DB_DIR)
-
-if CHROMA_COLLECTION_NAME in [c.name for c in chroma_client.list_collections()]:
-    chroma_client.delete_collection(CHROMA_COLLECTION_NAME)
-
-collection = chroma_client.get_or_create_collection(
-    name=CHROMA_COLLECTION_NAME,
-    metadata={"hnsw:space": "cosine"}
-)
+print("[Step 4] Connecting to ChromaDB...")
+chroma_client = chromadb.PersistentClient(path=CHROMA_DB_DIR)
+collection = chroma_client.get_collection(CHROMA_COLLECTION_NAME)
 
 #
 #

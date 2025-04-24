@@ -21,7 +21,7 @@ EPOCHS = 10
 BATCH_SIZE = 128
 EMBED_DIM = 300
 
-CHECKPOINT_PATH = Path("../checkpoint_hard.pt")
+CHECKPOINT_PATH = Path("../checkpoint_hard_latest.pt")
 EMBEDDING_MATRIX_PATH = Path("../embedding_matrix.npy")
 TRIPLETS_PATH = Path("../train_tokenised_hard.parquet")
 
