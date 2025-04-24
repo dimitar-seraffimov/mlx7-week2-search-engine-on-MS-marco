@@ -6,8 +6,6 @@ from pathlib import Path
 from tqdm import tqdm
 from tower_model import TwoTowerModel
 import chromadb
-from torch.utils.data import DataLoader
-from chromadb import PersistentClient
 
 #
 #
