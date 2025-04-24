@@ -61,9 +61,10 @@ def encode_passages():
             doc_ids = [f"doc_{i+j}" for j in range(len(batch))]
 
             # batch add to ChromaDB
-            collection.add(embeddings=embeddings, ids=doc_ids)
+            collection.add(documents=doc_texts, embeddings=embeddings, ids=doc_ids)
 
     print("[✓] Encoding complete. Collection saved.")
+    print(collection.peek()) # check collection
 
 #
 # RUN
