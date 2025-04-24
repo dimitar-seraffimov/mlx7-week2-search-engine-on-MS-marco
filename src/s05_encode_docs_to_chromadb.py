@@ -25,7 +25,6 @@ BATCH_SIZE = 1024  # adjust depending on available memory
 
 chroma_client = Client(
     settings=Settings(
-        chroma_db_impl="duckdb+parquet",
         persist_directory=str(CHROMA_DB_DIR),
         anonymized_telemetry=False,
     )
