@@ -7,16 +7,29 @@ from tower_model import TwoTowerModel
 from s02_tkn_ms_marco import text_to_ids
 import chromadb
 
-# Configuration paths
+#
+#
+# SETUP
+#
+#
+
+BASE = Path(__file__).parent.parent  # one level up from src/
 defaults = {
-    "VOCAB_PATH": "../tkn_vocab_to_int.parquet",
-    "EMBEDDING_MATRIX_PATH": "../embedding_matrix.npy",
-    "CHECKPOINT_PATH": "../checkpoint_hard.pt",
-    "CHROMA_DB_DIR": "../chromadb",
+    "VOCAB_PATH": str(BASE / "tkn_vocab_to_int.parquet"),
+    "EMBEDDING_MATRIX_PATH": str(BASE / "embedding_matrix.npy"),
+    "CHECKPOINT_PATH": str(BASE / "checkpoint_hard.pt"),
+    "CHROMA_DB_DIR": str(BASE / "chromadb"),
     "CHROMA_COLLECTION_NAME": "document"
 }
 
-# load artifacts
+
+
+#
+#
+# LOAD COMPONENTS
+#
+#
+
 @st.cache_resource
 def load_components():
     vocab_to_int = pd.read_parquet(defaults['VOCAB_PATH']).iloc[0].to_dict()
@@ -31,7 +44,12 @@ def load_components():
     )
     return vocab_to_int, model, collection
 
-# embed query
+#
+#
+# EMBED QUERY
+#
+#
+
 @st.cache_data
 def embed_query(query, vocab_to_int, model):
     ids = text_to_ids(query, vocab_to_int)
@@ -41,7 +59,12 @@ def embed_query(query, vocab_to_int, model):
     with torch.no_grad():
         return model.encode(tensor).squeeze(0).cpu().numpy()
 
-# main streamlit ui
+#
+#
+# MAIN STREAMLIT UI
+#
+#
+
 st.title("Two-Tower Search Engine")
 
 vocab_to_int, model, collection = load_components()
