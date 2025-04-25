@@ -96,7 +96,7 @@ class PassageDataset(Dataset):
     def __getitem__(self, idx):
         return {
             "ids": self.df.iloc[idx]["id"],
-            "text": self.df.iloc[idx]["passage"],
+            "text": self.df.iloc[idx]["positive_passage"],
             "input_ids": torch.tensor(self.df.iloc[idx]["pos_ids"], dtype=torch.long)
         }
 
