@@ -2,9 +2,8 @@ import streamlit as st
 import torch
 import numpy as np
 import pandas as pd
-from pathlib import Path
-from tower_model import TwoTowerModel
-from s02_tkn_ms_marco import text_to_ids
+from scripts.tower_model import TwoTowerModel
+from scripts.s02_tkn_ms_marco import text_to_ids
 import chromadb
 
 #
@@ -13,12 +12,11 @@ import chromadb
 #
 #
 
-BASE = Path(__file__).parent.parent  # one level up from src/
 defaults = {
-    "VOCAB_PATH": str(BASE / "tkn_vocab_to_int.parquet"),
-    "EMBEDDING_MATRIX_PATH": str(BASE / "embedding_matrix.npy"),
-    "CHECKPOINT_PATH": str(BASE / "checkpoint_hard.pt"),
-    "CHROMA_DB_DIR": str(BASE / "chromadb"),
+    "VOCAB_PATH": str("tkn_vocab_to_int.parquet"),
+    "EMBEDDING_MATRIX_PATH": str("embedding_matrix.npy"),
+    "CHECKPOINT_PATH": str("checkpoint_hard.pt"),
+    "CHROMA_DB_DIR": str("chromadb"),
     "CHROMA_COLLECTION_NAME": "document"
 }
 
