@@ -56,7 +56,11 @@ files = [
     "../validation_tokenised.parquet",
     "../test_tokenised.parquet"
 ]
+# load and concat
 df = pd.concat([pd.read_parquet(f) for f in files], ignore_index=True)
+# reset index → new unique doc ID
+df = df.reset_index().rename(columns={"index": "id"})
+# now df["id"] is your passage ID
 
 # shuffle so your batches aren’t in “train-then-val-then-test” order
 shuffled_tokens_df = df.sample(frac=1, random_state=42).reset_index(drop=True)

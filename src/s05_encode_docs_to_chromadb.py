@@ -41,6 +41,7 @@ def encode_passages():
 
     print("[Step 2] Loading tokenised data...")
     df = pd.read_parquet(TOKENISED_DATA_PATH)
+    df = df.reset_index().rename(columns={"index": "id"})  # new id column
 
     print("[Step 3] Creating Chroma collection...")
     collection = chroma_client.get_or_create_collection(
@@ -54,14 +55,16 @@ def encode_passages():
             batch = df.iloc[i:i+BATCH_SIZE]
 
             # prepare input tensors
-            passages = [torch.tensor(x, dtype=torch.long) for x in batch["pos_ids"]]
+            passages = [
+                torch.tensor(x, dtype=torch.long) 
+                for x in batch["pos_ids"]
+            ]
             passages_padded = nn.utils.rnn.pad_sequence(passages, batch_first=True, padding_value=0).to(device)
 
             embeddings = model.encode(passages_padded).cpu().numpy().tolist()
 
+            doc_ids = batch["id"].astype(str).tolist()
             doc_texts = list(batch["positive_passage"])
-            doc_ids = [f"doc_{i+j}" for j in range(len(batch))]
-
             # batch add to ChromaDB
             collection.add(documents=doc_texts, embeddings=embeddings, ids=doc_ids)
 

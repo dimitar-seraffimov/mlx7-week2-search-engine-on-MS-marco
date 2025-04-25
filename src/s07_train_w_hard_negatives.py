@@ -148,7 +148,7 @@ def main():
             wandb.log({"val_loss": val_loss, "epoch": epoch + 1})
             
             # connect to the pre-cached Chroma collection
-            client     = PersistentClient(path="../chromadb")
+            client = PersistentClient(path="../chromadb")
             collection = client.get_or_create_collection(
                 name="document", metadata={"distance_metric":"cosine"}
             )

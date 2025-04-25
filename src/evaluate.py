@@ -136,6 +136,9 @@ def run_evaluation():
 
     # — build ranked_lists & relevant_sets
     val_df = pd.read_parquet(VAL_PARQUET_PATH)
+    val_df = val_df.reset_index().rename(columns={"index":"id"})
+
+
     ranked_lists, relevant_sets = [], []
     for row in val_df.itertuples():
         # embed query
@@ -149,10 +152,9 @@ def run_evaluation():
             query_embeddings=[q_vec],
             n_results=TOP_K
         )
-        docs = results["documents"][0]  # list of passage texts
-        ranked_lists.append(docs)
-        # assume row.positive_passage is the ground-truth text
-        relevant_sets.append({row.positive_passage})
+        doc_ids = results["ids"][0]       # <-- list of retrieved IDs
+        ranked_lists.append(doc_ids)
+        relevant_sets.append({row.id})    # <-- compare to the ground-truth ID
 
     # — compute and display metrics
     mrr  = mrr_at_k(ranked_lists, relevant_sets, k=TOP_K)
