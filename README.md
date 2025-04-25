@@ -28,18 +28,28 @@ Instructions:
 - run real user queries against ChromaDB
   python s09_query_retrieve.py
 
-What do we need to do tomorrow?
+What have I achieved in this week? Reflections and future ideas for improvements:
 
-- re-encode passages with the improved model
-  run s08_encode_w_hard_model.py
+- combined MS MARCO splits into a single Parquet for end-to-end processing
+- generated query–positive–negative triplets with random sampling
+- built GloVe-based vocabulary and embedding matrix aligned to our tokens
+- trained an initial Two-Tower model on random negatives
+- indexed passage embeddings into ChromaDB for fast retrieval
+- mined hard negatives via ChromaDB and updated our triplet set -> this doesn't work well!
+- retrained the Two-Tower model with hard negatives, reducing triplet loss -> this doesn't work well!
+- re-encoded all passages with the improved checkpoint into ChromaDB
+- validated the full query→embedding -> search pipeline / python s09_query_retrieve.py prompts the user to "ask" a query
 
-- run user queries
-  python s09_query_retrieve.py
+What we could have done better?
 
-- try to implement RNN-based encoder
+- python s09_query_retrieve.py
+  --> the results which I am getting are terrible (in terms of real connection to the query)
+  --> I understand how everything works and is supposed to though!
+
+- try to implement RNN-based encoder - did not have time for that...
   replace the average pooling in the current Two-Tower model with a GRU or LSTM.
   update the TwoTowerModel to use an RNN encoder for both query and passage towers.
 
-- train the RNN version
+- train the RNN version - did not have time for that...
   adapt the training script (e.g. 02_train_tower.py) to train the RNN-based model.
   log and compare performance with the baseline using Weights & Biases.
