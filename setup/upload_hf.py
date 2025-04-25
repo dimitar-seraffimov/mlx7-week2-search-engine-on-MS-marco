@@ -2,6 +2,7 @@
 import os
 from huggingface_hub import HfApi, upload_folder
 
+HF_TOKEN = os.environ.get("HF_TOKEN")
 REPO_ID  = "madnexx/mlx7-week2-artifacts"
 
 # create the repo (ignore error if it already exists)
