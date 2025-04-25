@@ -43,12 +43,23 @@ print(f"[✓] Downloaded and saved checkpoint to {LOCAL_CHECKPOINT}")
 
 EMBEDDING_MATRIX_PATH = Path("../embedding_matrix.npy")
 CHECKPOINT_PATH = Path("../checkpoint_hard.pt")
-TOKENISED_DATA_PATH = Path("../combined_tokenised.parquet")
+TOKENISED_DATA_PATH = Path("../train_tokenised.parquet")
 CHROMA_COLLECTION_NAME = "document"
 CHROMA_DB_DIR = "../chromadb"
 BATCH_SIZE = 1024
 NUM_WORKERS = 4
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+# load each split
+files = [
+    "../train_tokenised.parquet",
+    "../validation_tokenised.parquet",
+    "../test_tokenised.parquet"
+]
+df = pd.concat([pd.read_parquet(f) for f in files], ignore_index=True)
+
+# shuffle so your batches aren’t in “train-then-val-then-test” order
+shuffled_tokens_df = df.sample(frac=1, random_state=42).reset_index(drop=True)
 
 #
 #
@@ -104,9 +115,8 @@ def encode_passages():
     model.load_state_dict(torch.load(CHECKPOINT_PATH, map_location=device))
     model.to(device).eval()
 
-    print("[Step 2] Loading tokenised data...")
-    df = pd.read_parquet(TOKENISED_DATA_PATH)
-    dataset = PassageDataset(df)
+    print("[Step 2] Loading combined and shuffled tokenised data...")
+    dataset = PassageDataset(shuffled_tokens_df)
     loader = DataLoader(dataset, batch_size=BATCH_SIZE, collate_fn=collate_fn, num_workers=NUM_WORKERS, pin_memory=True)
 
     print("[INFO] Clearing existing ChromaDB documents...")

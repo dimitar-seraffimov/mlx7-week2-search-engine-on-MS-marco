@@ -5,16 +5,23 @@ from torch.utils.data import DataLoader, Dataset
 import pandas as pd
 from pathlib import Path
 from tower_model import TwoTowerModel
+import numpy as np
+from chromadb import PersistentClient
+from s02_tkn_ms_marco import text_to_ids
 
+#
 #
 # CONFIG
 #
+#
 
+TOP_K = 10
 EMBEDDING_MATRIX_PATH = Path("../embedding_matrix.npy")
 CHECKPOINT_PATH = Path("../checkpoint_hard.pt")
 VAL_PARQUET_PATH = Path("../validation_tokenised.parquet")
 BATCH_SIZE = 128
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+vocab_to_int = pd.read_parquet("../tkn_vocab_to_int.parquet").iloc[0].to_dict()
 
 
 #
@@ -68,9 +75,37 @@ def evaluate(model, val_loader, criterion):
             total_loss += loss.item()
     return total_loss / len(val_loader)
 
+#
+#
+# RETRIEVAL EVALUATION
+#
+#
+
+def mrr_at_k(ranked_lists, relevant_sets, k):
+    rr_scores = []
+    for ranked, relevant in zip(ranked_lists, relevant_sets):
+        rr = 0.0
+        for idx, doc_id in enumerate(ranked[:k]):
+            if doc_id in relevant:
+                rr = 1.0 / (idx + 1)
+                break
+        rr_scores.append(rr)
+    return np.mean(rr_scores)
+
+def ndcg_at_k(ranked_lists, relevant_sets, k):
+    def dcg(scores):
+        return sum((2**rel - 1) / np.log2(idx + 2) for idx, rel in enumerate(scores))
+    ndcg_scores = []
+    for ranked, relevant in zip(ranked_lists, relevant_sets):
+        gains = [1 if doc_id in relevant else 0 for doc_id in ranked[:k]]
+        ideal = sorted(gains, reverse=True)
+        ndcg_scores.append(dcg(gains) / dcg(ideal) if sum(ideal) > 0 else 0)
+    return np.mean(ndcg_scores)
 
 #
+#
 # MAIN
+#
 #
 
 def run_evaluation():
@@ -88,6 +123,46 @@ def run_evaluation():
     print("[Step 3] Evaluating...")
     avg_loss = evaluate(model, val_loader, criterion)
     print(f"[✓] Validation Loss: {avg_loss:.4f}")
+
+    #
+    # RETRIEVAL EVALUATION
+    #
+
+    print("[Step 4] Retrieval Evaluation as MRR@K and NDCG@K...")
+    client = PersistentClient(path="../chromadb")
+    collection = client.get_or_create_collection(
+        name="document", metadata={"distance_metric":"cosine"}
+    )
+
+    # — build ranked_lists & relevant_sets
+    val_df = pd.read_parquet(VAL_PARQUET_PATH)
+    ranked_lists, relevant_sets = [], []
+    for row in val_df.itertuples():
+        # embed query
+        ids = text_to_ids(row.query, vocab_to_int) 
+        q_tensor = torch.tensor([ids], dtype=torch.long).to(DEVICE)
+        with torch.no_grad():
+            q_vec = model.encode(q_tensor).squeeze(0).cpu().numpy()
+
+        # retrieve top-K from ChromaDB
+        results = collection.query(
+            query_embeddings=[q_vec],
+            n_results=TOP_K
+        )
+        docs = results["documents"][0]  # list of passage texts
+        ranked_lists.append(docs)
+        # assume row.positive_passage is the ground-truth text
+        relevant_sets.append({row.positive_passage})
+
+    # — compute and display metrics
+    mrr  = mrr_at_k(ranked_lists, relevant_sets, k=TOP_K)
+    ndcg = ndcg_at_k(ranked_lists, relevant_sets, k=TOP_K)
+    print(f"MRR@{TOP_K}:  {mrr:.4f}")
+    print(f"nDCG@{TOP_K}: {ndcg:.4f}")
+
+
+
+
 
 if __name__ == "__main__":
     run_evaluation()

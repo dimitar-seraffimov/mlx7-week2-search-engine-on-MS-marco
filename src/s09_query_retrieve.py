@@ -12,7 +12,7 @@ import chromadb
 #
 #
 
-VOCAB_PATH = Path("../combined_tokenised.parquet")
+VOCAB_PATH = Path("../tkn_vocab_to_int.parquet")
 EMBEDDING_MATRIX_PATH = Path("../embedding_matrix.npy")
 CHECKPOINT_PATH = Path("../checkpoint_hard.pt")
 CHROMA_DB_DIR = "../chromadb"
@@ -30,10 +30,10 @@ vocab_to_int = pd.read_parquet(VOCAB_PATH).iloc[0].to_dict()
 #
 #
 # LOAD CHROMADB
-#
+# embeddings are stored in ChromaDB at s05 and s08 via collection.add()
 #
 
-print("[Step 4] Connecting to ChromaDB...")
+print("[INFO] Connecting to ChromaDB...")
 chroma_client = chromadb.PersistentClient(path=CHROMA_DB_DIR)
 collection = chroma_client.get_or_create_collection(
     name=CHROMA_COLLECTION_NAME,
@@ -43,7 +43,7 @@ print("[DEBUG] Peek:", collection.peek())
 
 #
 #
-# LOAD MODEL
+# LOAD MODEL with hard_trained_negatives weights
 #
 #
 
@@ -76,11 +76,15 @@ def embed_query(query: str) -> np.ndarray:
 def query_chromadb(query: str, k: int = 5):
     print(f"\nQuery: {query}")
     try:
-        query_vec = embed_query(query)
+        query_vec = embed_query(query) # encode query
     except ValueError as e:
         print(f"[!] Cannot embed query: {e}")
         return
-
+    # collection.query() returns a dict with keys:
+    # - documents: list of retrieved documents
+    # - ids: list of document IDs
+    # - distances: list of cosine distances between query and retrieved documents
+    # -> returns the smallest distances first
     results = collection.query(
         query_embeddings=[query_vec],
         n_results=k
@@ -105,4 +109,4 @@ if __name__ == "__main__":
         q = input("Enter your query (or 'exit'): ")
         if q.lower() in ("exit", "quit"):
             break
-        query_chromadb(q, k=5)
+        query_chromadb(q, k=10)

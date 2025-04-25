@@ -24,13 +24,11 @@ Instructions:
 - train Two-Tower model again with hard negatives
   python s07_train_w_hard_negatives.py
 - re-encode passages using the improved model
-  python s08_encode_w_hard_model.py
+  python s08_reencode_all.py
 - run real user queries against ChromaDB
   python s09_query_retrieve.py
 
 What do we need to do tomorrow?
-
-- use parquet not pkl! - changed that already
 
 - re-encode passages with the improved model
   run s08_encode_w_hard_model.py

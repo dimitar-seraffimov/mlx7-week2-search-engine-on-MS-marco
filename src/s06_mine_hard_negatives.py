@@ -57,7 +57,7 @@ collection = chroma_client.get_or_create_collection(
 
 print("[DEBUG] Collection doc count:", collection.count())
 peeked = collection.peek()
-print("[DEBUG] Sample docs:", peeked["documents"][:3])
+print("[DEBUG] Sample docs:", peeked["documents"][:5])
 
 #
 #
@@ -78,7 +78,7 @@ with torch.no_grad():
 
       results = collection.query(
           query_embeddings=query_embeddings.tolist(),
-          n_results=5
+          n_results=10
       )
 
       for j, row in enumerate(batch.itertuples()):

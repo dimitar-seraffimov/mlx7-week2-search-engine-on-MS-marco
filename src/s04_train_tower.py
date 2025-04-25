@@ -1,5 +1,7 @@
 import torch
 import torch.nn as nn
+from torch.nn import TripletMarginWithDistanceLoss
+import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
 import pandas as pd
@@ -18,7 +20,7 @@ EPOCHS = 2 # no need for more at this stage -> really low initial loss, running 
 BATCH_SIZE = 128
 EMBED_DIM = 300
 LR = 1e-3
-MARGIN = 0.2
+MARGIN = 0.55
 CLIP = 1.0
 CHECKPOINT_PATH = Path("../checkpoint_early.pt")
 EMBEDDING_MATRIX_PATH = Path("../embedding_matrix.npy")
@@ -74,10 +76,16 @@ def train():
     print("[Step 2] Building model...")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
+    # define model
     model = TwoTowerModel(embedding_matrix).to(device)
-    criterion = nn.TripletMarginLoss(margin=0.2, p=2)
-    optimizer = optim.Adam(model.parameters(), lr=1e-3)
-    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=2, gamma=0.8)
+
+    # define cosine distance: 1 - cosine similarity
+    cosine_distance = lambda x, y: 1 - F.cosine_similarity(x, y, dim=1)
+    criterion = TripletMarginWithDistanceLoss(
+        distance_function=cosine_distance,
+        margin=MARGIN
+    )
+    optimizer = optim.Adam(model.parameters(), lr=LR)
 
     print("[Step 3] Starting training...")
     for epoch in range(EPOCHS):
