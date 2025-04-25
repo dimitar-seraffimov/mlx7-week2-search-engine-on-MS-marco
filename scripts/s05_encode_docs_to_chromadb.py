@@ -1,13 +1,11 @@
+from chromadb import PersistentClient
+import pandas as pd
+import numpy as np
 import torch
 import torch.nn as nn
-import numpy as np
-import pandas as pd
 from pathlib import Path
 from tqdm import tqdm
 from tower_model import TwoTowerModel
-import chromadb
-from torch.utils.data import DataLoader
-from chromadb import PersistentClient
 
 #
 # SETUP
@@ -20,11 +18,15 @@ CHROMA_COLLECTION_NAME = "document"
 CHROMA_DB_DIR = "../chromadb"
 BATCH_SIZE = 1024  # adjust depending on available memory
 
+
+# Use GPU if available
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 #
 # INITIALISE CHROMADB
 #
 
-chroma_client = PersistentClient(path=CHROMA_DB_DIR)
+chroma_client = PersistentClient(path="../chromadb")
 
 #
 # ENCODE & ADD TO CHROMADB (BATCHED)
@@ -33,17 +35,18 @@ chroma_client = PersistentClient(path=CHROMA_DB_DIR)
 def encode_passages():
     print("[Step 1] Loading model and checkpoint...")
     embedding_matrix = torch.tensor(np.load(EMBEDDING_MATRIX_PATH), dtype=torch.float32)
-    model = TwoTowerModel(embedding_matrix)
-    model.load_state_dict(torch.load(CHECKPOINT_PATH, map_location="cpu"))
+    model = TwoTowerModel(embedding_matrix).to(device)
+    model.load_state_dict(torch.load(CHECKPOINT_PATH, map_location=device))
     model.eval()
 
     print("[Step 2] Loading tokenised data...")
     df = pd.read_parquet(TOKENISED_DATA_PATH)
+    df = df.reset_index().rename(columns={"index": "id"})  # new id column
 
     print("[Step 3] Creating Chroma collection...")
     collection = chroma_client.get_or_create_collection(
         name=CHROMA_COLLECTION_NAME,
-        metadata={"hnsw:space": "cosine"}
+        metadata={"distance_metric": "cosine"},
     )
 
     print("[Step 4] Encoding and adding to ChromaDB in batches...")
@@ -52,22 +55,22 @@ def encode_passages():
             batch = df.iloc[i:i+BATCH_SIZE]
 
             # prepare input tensors
-            passages = [torch.tensor(x, dtype=torch.long) for x in batch["pos_ids"]]
-            passages_padded = nn.utils.rnn.pad_sequence(passages, batch_first=True, padding_value=0)
+            passages = [
+                torch.tensor(x, dtype=torch.long) 
+                for x in batch["pos_ids"]
+            ]
+            passages_padded = nn.utils.rnn.pad_sequence(passages, batch_first=True, padding_value=0).to(device)
 
-            embeddings = model.encode(passages_padded).numpy().tolist()
+            embeddings = model.encode(passages_padded).cpu().numpy().tolist()
 
+            doc_ids = batch["id"].astype(str).tolist()
             doc_texts = list(batch["positive_passage"])
-            doc_ids = [f"doc_{i+j}" for j in range(len(batch))]
-
             # batch add to ChromaDB
-            collection.add(
-                documents=doc_texts,
-                embeddings=embeddings,
-                ids=doc_ids
-            )
+            collection.add(documents=doc_texts, embeddings=embeddings, ids=doc_ids)
 
     print("[✓] Encoding complete. Collection saved.")
+    print(collection.peek()) # check collection
+    print("[DEBUG] Total docs in collection:", collection.count())
 
 #
 # RUN

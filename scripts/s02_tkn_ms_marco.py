@@ -44,7 +44,7 @@ def preprocess(text: str) -> list[str]:
 #
 #
 
-def text_to_ids(text: str, vocab_to_int: dict[str, int], max_unk_ratio: float = 0.2) -> list[int]:
+def text_to_ids(text: str, vocab_to_int: dict[str, int], max_unk_ratio: float = 0.15) -> list[int]:
     unk_id = vocab_to_int["<UNK>"]
     words = preprocess(text)
     ids = [vocab_to_int.get(word, unk_id) for word in words]
@@ -140,7 +140,7 @@ def build_and_save_vocab(corpus: list[str]):
 #
 #
 
-def tokenise_and_save_splits(vocab_to_int: dict, int_to_vocab: dict):
+def tokenise_and_save(vocab_to_int: dict, int_to_vocab: dict):
     print("Tokenising data splits...")
 
     splits = {
@@ -159,7 +159,16 @@ def tokenise_and_save_splits(vocab_to_int: dict, int_to_vocab: dict):
         df["n_len"] = df["neg_ids"].str.len()
 
         print(f"{name}: avg q {df['q_len'].mean():.1f}, p {df['p_len'].mean():.1f}, n {df['n_len'].mean():.1f}")
-        # Save to root directory
+
+        df = df[[
+            "query", "positive_passage", "negative_passage",
+            "query_ids", "pos_ids", "neg_ids", "q_len", "p_len", "n_len"
+        ]]
+
+        print(f"\n[{name.upper()}] Sample rows before saving:")
+        print(df.head(2).T)
+        
+        # save to root directory
         df.to_parquet(f"../{name}_tokenised.parquet")
 
         print(f"\nTokenised samples from {name.upper()}:")
@@ -184,4 +193,4 @@ if __name__ == "__main__":
     # build vocab
     vocab_to_int, int_to_vocab = build_and_save_vocab(combined_corpus)
     # tokenise and save splits
-    tokenise_and_save_splits(vocab_to_int, int_to_vocab)
+    tokenise_and_save(vocab_to_int, int_to_vocab)

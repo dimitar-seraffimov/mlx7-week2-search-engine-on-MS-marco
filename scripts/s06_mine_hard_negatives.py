@@ -4,8 +4,8 @@ import pandas as pd
 from tqdm import tqdm
 from pathlib import Path
 from tower_model import TwoTowerModel
-import chromadb
-from tkn_ms_marco import text_to_ids
+from chromadb import PersistentClient
+from s02_tkn_ms_marco import text_to_ids
 import torch.nn as nn
 
 #
@@ -47,8 +47,17 @@ print("[Step 3] Loading tokenised data...")
 df = pd.read_parquet(TOKENISED_DATA_PATH)
 
 print("[Step 4] Connecting to ChromaDB...")
-chroma_client = chromadb.PersistentClient(path="../chromadb")
-collection = chroma_client.get_collection(CHROMA_COLLECTION_NAME)
+chroma_client = PersistentClient(path="../chromadb")
+
+
+collection = chroma_client.get_or_create_collection(
+    name=CHROMA_COLLECTION_NAME,
+    metadata={"distance_metric": "cosine"},
+)
+
+print("[DEBUG] Collection doc count:", collection.count())
+peeked = collection.peek()
+print("[DEBUG] Sample docs:", peeked["documents"][:5])
 
 #
 #
@@ -69,7 +78,7 @@ with torch.no_grad():
 
       results = collection.query(
           query_embeddings=query_embeddings.tolist(),
-          n_results=5
+          n_results=10
       )
 
       for j, row in enumerate(batch.itertuples()):
@@ -79,9 +88,7 @@ with torch.no_grad():
 
           # find one valid hard negative
           hard_negative_text = next(
-              (doc for doc in retrieved_docs if doc.strip() != gold_text.strip()),
-              None
-          )
+            (doc for doc in retrieved_docs if doc and gold_text.strip() not in doc.strip()), None)
 
           if not hard_negative_text:
               continue  # skip if none found

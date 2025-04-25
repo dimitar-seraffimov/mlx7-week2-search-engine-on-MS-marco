@@ -3,9 +3,8 @@ import numpy as np
 import pandas as pd
 from tower_model import TwoTowerModel
 from pathlib import Path
-from tkn_ms_marco import text_to_ids
+from s02_tkn_ms_marco import text_to_ids
 import chromadb
-from chromadb.config import Settings
 
 #
 #
@@ -16,7 +15,9 @@ from chromadb.config import Settings
 VOCAB_PATH = Path("../tkn_vocab_to_int.parquet")
 EMBEDDING_MATRIX_PATH = Path("../embedding_matrix.npy")
 CHECKPOINT_PATH = Path("../checkpoint_hard.pt")
+CHROMA_DB_DIR = "../chromadb"
 CHROMA_COLLECTION_NAME = "document"
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 #
 #
@@ -24,40 +25,32 @@ CHROMA_COLLECTION_NAME = "document"
 #
 #
 
-vocab_to_int = pd.read_parquet(VOCAB_PATH)
+vocab_to_int = pd.read_parquet(VOCAB_PATH).iloc[0].to_dict()
 
 #
 #
 # LOAD CHROMADB
-#
+# embeddings are stored in ChromaDB at s05 and s08 via collection.add()
 #
 
-chroma_client = chromadb.Client(Settings(
-    chroma_db_impl="duckdb+parquet",
-    persist_directory="../chromadb"
-))
-collection = chroma_client.get_collection(CHROMA_COLLECTION_NAME)
+print("[INFO] Connecting to ChromaDB...")
+chroma_client = chromadb.PersistentClient(path=CHROMA_DB_DIR)
+collection = chroma_client.get_or_create_collection(
+    name=CHROMA_COLLECTION_NAME,
+    metadata={"distance_metric": "cosine"}
+)
+print("[DEBUG] Peek:", collection.peek())
 
 #
 #
-# LOAD MODEL
+# LOAD MODEL with hard_trained_negatives weights
 #
 #
 
 embedding_matrix = torch.tensor(np.load(EMBEDDING_MATRIX_PATH), dtype=torch.float32)
 model = TwoTowerModel(embedding_matrix)
-model.load_state_dict(torch.load(CHECKPOINT_PATH, map_location="cpu"))
-model.eval()
-
-# === Query helper ===
-def embed_query(query: str) -> np.ndarray:
-    ids = text_to_ids(query, vocab_to_int)
-    if not ids:
-        raise ValueError("Query tokens are too unknown or empty.")
-    query_tensor = torch.tensor([ids], dtype=torch.long)
-    with torch.no_grad():
-        embedding = model.encode(query_tensor).squeeze(0).numpy()
-    return embedding
+model.load_state_dict(torch.load(CHECKPOINT_PATH, map_location=device))
+model.to(device).eval()
 
 #
 #
@@ -65,14 +58,33 @@ def embed_query(query: str) -> np.ndarray:
 #
 #
 
+def embed_query(query: str) -> np.ndarray:
+    ids = text_to_ids(query, vocab_to_int)
+    if not isinstance(ids, list) or len(ids) == 0:
+        raise ValueError("Query tokens are too unknown or empty.")
+    query_tensor = torch.tensor([ids], dtype=torch.long).to(device)
+    with torch.no_grad():
+        embedding = model.encode(query_tensor).squeeze(0).cpu().numpy()
+    return embedding
+
+#
+#
+# QUERY CHROMADB
+#
+#
+
 def query_chromadb(query: str, k: int = 5):
     print(f"\nQuery: {query}")
     try:
-        query_vec = embed_query(query)
+        query_vec = embed_query(query) # encode query
     except ValueError as e:
         print(f"[!] Cannot embed query: {e}")
         return
-
+    # collection.query() returns a dict with keys:
+    # - documents: list of retrieved documents
+    # - ids: list of document IDs
+    # - distances: list of cosine distances between query and retrieved documents
+    # -> returns the smallest distances first
     results = collection.query(
         query_embeddings=[query_vec],
         n_results=k
@@ -97,4 +109,4 @@ if __name__ == "__main__":
         q = input("Enter your query (or 'exit'): ")
         if q.lower() in ("exit", "quit"):
             break
-        query_chromadb(q, k=5)
+        query_chromadb(q, k=10)
