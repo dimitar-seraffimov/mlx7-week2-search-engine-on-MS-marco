@@ -60,6 +60,7 @@ files = [
 df = pd.concat([pd.read_parquet(f) for f in files], ignore_index=True)
 # reset index → new unique doc ID
 df = df.reset_index().rename(columns={"index": "id"})
+df["id"] = df["id"].astype(str)
 # now df["id"] is your passage ID
 
 # shuffle so your batches aren’t in “train-then-val-then-test” order
